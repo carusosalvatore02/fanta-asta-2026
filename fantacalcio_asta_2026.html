@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚽ Fantacalcio Asta 2026-27</title>
+<style>
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3250;
+  --text:#e8eaf6; --muted:#7986cb; --accent:#5c6bc0; --gold:#ffd700;
+  --fs:#c00000; --fs-bg:#2d0808; --fs-txt:#ff8a80;
+  --fa:#d84315; --fa-bg:#2d1500; --fa-txt:#ffab76;
+  --fb:#b8860b; --fb-bg:#2a1f00; --fb-txt:#ffd700;
+  --fc:#2e7d32; --fc-bg:#0a1f0b; --fc-txt:#81c784;
+  --rp:#1565c0; --rd:#1b5e20; --rc:#bf360c; --ra:#880e4f;
+  --col-left:200px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;}
+
+/* HEADER */
+header{background:linear-gradient(135deg,#1a1d27,#0f1117);border-bottom:2px solid var(--accent);padding:16px 16px 12px;}
+header h1{font-size:20px;font-weight:800;color:#fff;}
+header h1 span{color:var(--gold);}
+.subtitle{color:var(--muted);font-size:11px;margin-top:2px;}
+.pills{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 12px;font-size:11px;color:var(--muted);}
+.pill strong{color:var(--text);}
+
+/* MERCATO PANEL */
+.mercato-panel{background:var(--surface);border-bottom:2px solid var(--accent);padding:12px 16px;}
+.mercato-title{font-size:12px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.mercato-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.api-input{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:6px;font-size:12px;flex:1;min-width:180px;outline:none;font-family:monospace;}
+.api-input:focus{border-color:var(--accent);}
+.api-input::placeholder{color:#444;font-family:'Segoe UI',sans-serif;}
+.btn-aggiorna{background:var(--accent);border:none;color:#fff;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;transition:all .15s;white-space:nowrap;}
+.btn-aggiorna:hover{background:#7986cb;}
+.btn-aggiorna:disabled{background:#333;color:#666;cursor:not-allowed;}
+.mercato-status{font-size:11px;color:var(--muted);margin-top:6px;min-height:16px;display:flex;align-items:center;gap:6px;}
+.mercato-status.ok{color:#81c784;}
+.mercato-status.err{color:#ef9a9a;}
+.mercato-status.loading{color:var(--gold);}
+.mercato-legend{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
+.merc-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:800;}
+.merc-badge.ceduto{background:#c00000;color:#fff;}
+.merc-badge.nuovo{background:#1b5e20;color:#fff;}
+.merc-badge.cambiato{background:#e65c00;color:#fff;}
+.merc-badge.confermato{background:#1565c0;color:#fff;}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid #444;border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.privacy-note{font-size:10px;color:#555;margin-top:6px;}
+
+/* FILTERS */
+.filters{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;position:sticky;top:0;z-index:200;}
+.filter-row{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
+.filter-row:last-child{margin-bottom:0;}
+.filter-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;width:46px;flex-shrink:0;}
+.fbtn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:5px 11px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;white-space:nowrap;}
+.fbtn:hover{border-color:var(--accent);color:var(--text);}
+.fbtn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.fbtn.fs.active{background:var(--fs);border-color:var(--fs);}
+.fbtn.fa.active{background:var(--fa);border-color:var(--fa);}
+.fbtn.fb.active{background:var(--fb);border-color:var(--fb);color:#000;}
+.fbtn.fc.active{background:var(--fc);border-color:var(--fc);}
+/* filtro mercato */
+.fbtn.ft-ceduto.active{background:#c00000;border-color:#c00000;}
+.fbtn.ft-nuovo.active{background:#1b5e20;border-color:#1b5e20;}
+.fbtn.ft-cambiato.active{background:#e65c00;border-color:#e65c00;}
+.search-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
+.search-wrap{position:relative;flex:1;}
+.search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 12px 7px 30px;border-radius:6px;font-size:12px;outline:none;}
+.search-wrap input:focus{border-color:var(--accent);}
+.search-wrap::before{content:'🔍';position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none;}
+.count-badge{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:4px 10px;font-size:11px;color:var(--muted);white-space:nowrap;}
+
+/* SORT BAR */
+.sort-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;position:sticky;top:140px;z-index:199;}
+.sort-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.sbtn{background:transparent;border:1px solid transparent;color:var(--muted);padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;}
+.sbtn:hover,.sbtn.active{background:var(--surface2);border-color:var(--border);color:var(--text);}
+
+/* SECTION / FASCIA */
+.sec-hdr{padding:12px 16px 4px;display:flex;align-items:center;gap:8px;}
+.sec-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}
+.sec-count{background:var(--surface2);border-radius:10px;padding:1px 7px;font-size:10px;color:var(--muted);}
+.fas-hdr{margin:2px 16px 0;padding:5px 12px;border-radius:5px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px;}
+.fas-hdr.S{background:var(--fs-bg);color:var(--fs-txt);border-left:3px solid var(--fs);}
+.fas-hdr.A{background:var(--fa-bg);color:var(--fa-txt);border-left:3px solid var(--fa);}
+.fas-hdr.B{background:var(--fb-bg);color:var(--fb-txt);border-left:3px solid var(--fb);}
+.fas-hdr.C{background:var(--fc-bg);color:var(--fc-txt);border-left:3px solid var(--fc);}
+
+/* TABLE */
+.tbl-outer{margin:2px 0 0;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{border-collapse:collapse;width:max-content;min-width:100%;}
+thead th,tbody td{padding:7px 10px;white-space:nowrap;border-bottom:1px solid #1e2236;text-align:center;vertical-align:middle;}
+thead th{background:#1e2236;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+thead th.sticky,tbody td.sticky{position:sticky;left:0;z-index:5;background:var(--surface);border-right:2px solid var(--border);text-align:left;min-width:var(--col-left);max-width:var(--col-left);overflow:hidden;text-overflow:ellipsis;}
+thead th.sticky{z-index:15;background:#1e2236;}
+tbody tr:hover td{background:#1e2445;}
+tbody tr:hover td.sticky{background:#1e2445;}
+
+/* Badges */
+.fb-badge{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:800;}
+.fb-badge.S{background:var(--fs);color:#fff;}
+.fb-badge.A{background:var(--fa);color:#fff;}
+.fb-badge.B{background:var(--fb);color:#000;}
+.fb-badge.C{background:var(--fc);color:#fff;}
+.rb-badge{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:800;}
+.rb-badge.P{background:var(--rp);color:#fff;}
+.rb-badge.D{background:var(--rd);color:#fff;}
+.rb-badge.C{background:var(--rc);color:#fff;}
+.rb-badge.A{background:var(--ra);color:#fff;}
+.pr-badge{display:inline-block;padding:3px 9px;border-radius:4px;font-weight:800;font-size:12px;}
+.pr-badge.S{background:var(--fs);color:#fff;}
+.pr-badge.A{background:var(--fa);color:#fff;}
+.pr-badge.B{background:var(--fb);color:#000;}
+.pr-badge.C{background:var(--fc);color:#fff;}
+.name-cell{display:flex;align-items:center;gap:5px;}
+
+/* storico */
+.sc{display:flex;flex-direction:column;align-items:center;line-height:1.3;}
+.sc-fm{font-size:11px;font-weight:700;}
+.sc-fm.g{color:#81c784;} .sc-fm.m{color:var(--gold);} .sc-fm.l{color:#ef9a9a;} .sc-fm.n{color:#444;}
+.sc-pv{font-size:9px;color:var(--muted);}
+.sc-ga{font-size:9px;color:#ef9a9a;}
+
+/* infortuni */
+.inj-ok{color:var(--muted);} .inj-warn{color:#ffab76;} .inj-bad{color:#ef9a9a;}
+
+/* MERCATO STATUS IN RIGA */
+.row-mercato{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:80px;}
+.club-new{font-size:10px;color:#81c784;font-weight:700;}
+.club-old{font-size:9px;color:var(--muted);text-decoration:line-through;}
+
+.empty{text-align:center;padding:48px 16px;color:var(--muted);}
+.legend{display:flex;gap:12px;padding:12px 16px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);}
+.leg-dot{width:9px;height:9px;border-radius:2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚽ Fantacalcio <span>2026–27</span></h1>
+  <div class="subtitle">Lista asta · Stagione 2025-26 + storico 4 stagioni + calciomercato live</div>
+  <div class="pills">
+    <div class="pill"><strong id="cnt">140</strong> giocatori</div>
+    <div class="pill"><strong>8</strong> squadre · <strong>1500</strong> crediti</div>
+    <div class="pill">Dati reali Fantacalcio.it</div>
+  </div>
+</header>
+
+<!-- MERCATO PANEL -->
+<div class="mercato-panel">
+  <div class="mercato-title">🔄 Aggiornamento Calciomercato — football-data.org</div>
+  <div class="mercato-row">
+    <input class="api-input" type="password" id="apiKey" placeholder="Incolla qui la tua API Key (football-data.org)…" autocomplete="off">
+    <button class="btn-aggiorna" id="btnAggiorna" onclick="aggiornaMercato()">
+      <span id="btnIcon">🔄</span> Aggiorna Mercato
+    </button>
+  </div>
+  <div class="mercato-status" id="mercatoStatus">Inserisci la tua chiave API e clicca Aggiorna per verificare trasferimenti e nuove squadre.</div>
+  <div class="privacy-note">🔒 La chiave rimane solo sul tuo browser. Non viene inviata a nessun server esterno.</div>
+  <div class="mercato-legend" id="mercatoLegend" style="display:none">
+    <span class="merc-badge ceduto">CEDUTO</span> Giocatore non più in Serie A
+    <span class="merc-badge cambiato">CAMBIATO</span> Cambiato squadra in Serie A
+    <span class="merc-badge confermato">✓ CONFERMATO</span> Stesso club
+    <span style="color:var(--muted);font-size:10px">· Clicca "Ceduti" per filtrare</span>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <div class="filter-row">
+    <span class="filter-label">Ruolo</span>
+    <button class="fbtn active" data-f="ruolo" data-v="ALL">Tutti</button>
+    <button class="fbtn" data-f="ruolo" data-v="P">🧤 P</button>
+    <button class="fbtn" data-f="ruolo" data-v="D">🛡️ D</button>
+    <button class="fbtn" data-f="ruolo" data-v="C">⚙️ C</button>
+    <button class="fbtn" data-f="ruolo" data-v="A">⚽ A</button>
+  </div>
+  <div class="filter-row">
+    <span class="filter-label">Fascia</span>
+    <button class="fbtn active" data-f="fascia" data-v="ALL">Tutte</button>
+    <button class="fbtn fs" data-f="fascia" data-v="S">S</button>
+    <button class="fbtn fa" data-f="fascia" data-v="A">A</button>
+    <button class="fbtn fb" data-f="fascia" data-v="B">B</button>
+    <button class="fbtn fc" data-f="fascia" data-v="C">C</button>
+  </div>
+  <div class="filter-row" id="filterMercatoRow" style="display:none">
+    <span class="filter-label">Mercato</span>
+    <button class="fbtn active" data-f="mercato" data-v="ALL">Tutti</button>
+    <button class="fbtn ft-ceduto" data-f="mercato" data-v="ceduto">Ceduti</button>
+    <button class="fbtn ft-cambiato" data-f="mercato" data-v="cambiato">Cambiati</button>
+    <button class="fbtn ft-nuovo" data-f="mercato" data-v="confermato">Confermati</button>
+  </div>
+  <div class="search-row">
+    <div class="search-wrap">
+      <input type="text" id="search" placeholder="Cerca giocatore o club…">
+    </div>
+    <div class="count-badge" id="cnt2">140 trovati</div>
+  </div>
+</div>
+
+<div class="sort-bar">
+  <span class="sort-label">Ordina:</span>
+  <button class="sbtn active" data-s="default">Ruolo+Fascia</button>
+  <button class="sbtn" data-s="fvm">FVM ↓</button>
+  <button class="sbtn" data-s="fm">FM ↓</button>
+  <button class="sbtn" data-s="gol">Gol ↓</button>
+  <button class="sbtn" data-s="ass">Assist ↓</button>
+  <button class="sbtn" data-s="prezzo">Prezzo ↓</button>
+</div>
+
+<div id="app"></div>
+
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:#c00000"></div>S — Imprescindibile</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#d84315"></div>A — Top Player</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#b8860b"></div>B — Ottimo Titolare</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#2e7d32"></div>C — Low Cost</div>
+  <div class="leg-item">FM: <span style="color:#81c784">≥7</span> · <span style="color:#ffd700">≥6</span> · <span style="color:#ef9a9a">&lt;6</span></div>
+  <div class="leg-item">📈 crescita · 📉 calo · ➡️ stabile</div>
+</div>
+
+<script>
+
+const TEAM_MAP = {
+  "AC Milan": "Milan", "Milan": "Milan",
+  "Inter Milan": "Inter", "FC Internazionale Milano": "Inter",
+  "Juventus FC": "Juventus", "Juventus": "Juventus",
+  "SSC Napoli": "Napoli", "Napoli": "Napoli",
+  "AS Roma": "Roma", "Roma": "Roma",
+  "Atalanta BC": "Atalanta", "Atalanta": "Atalanta",
+  "SS Lazio": "Lazio", "Lazio": "Lazio",
+  "ACF Fiorentina": "Fiorentina", "Fiorentina": "Fiorentina",
+  "Torino FC": "Torino", "Torino": "Torino",
+  "Bologna FC 1909": "Bologna", "Bologna": "Bologna",
+  "Genoa CFC": "Genoa", "Genoa": "Genoa",
+  "Udinese Calcio": "Udinese", "Udinese": "Udinese",
+  "Cagliari Calcio": "Cagliari", "Cagliari": "Cagliari",
+  "US Lecce": "Lecce", "Lecce": "Lecce",
+  "Parma Calcio 1913": "Parma", "Parma": "Parma",
+  "Como 1907": "Como", "Como": "Como",
+  "Sassuolo Calcio": "Sassuolo", "Sassuolo": "Sassuolo",
+  "US Cremonese": "Cremonese", "Cremonese": "Cremonese",
+  "Pisa Sporting Club": "Pisa", "Pisa": "Pisa",
+  "Hellas Verona FC": "Verona", "Verona": "Verona",
+};
+
+
+const DATA = [{"fascia": "A", "ruolo": "P", "nome": "Svilar", "club": "Roma", "pv": 30, "mv": 6.28, "fm": 6.45, "gol": 0, "ass": 0, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 105, "qta": 17, "prezzo": 70, "note": "FVM 105, miglior portiere stagione", "altezza": 192, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": {"pv": 3, "mv": 6.0, "fm": 4.83, "gol": 0, "ass": 0}, "23_24": {"pv": 15, "mv": 6.47, "fm": 5.37, "gol": 0, "ass": 0}, "24_25": {"pv": 38, "mv": 6.32, "fm": 5.38, "gol": 0, "ass": 0}}}, {"fascia": "A", "ruolo": "P", "nome": "Butez", "club": "Como", "pv": 32, "mv": 6.2, "fm": 6.32, "gol": 0, "ass": 0, "amm": 1, "esp": 0, "rig": "2p", "fvm": 95, "qta": 16, "prezzo": 81, "note": "21 clean sheet", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 18, "mv": 6.22, "fm": 5.22, "gol": 0, "ass": 0}}}, {"fascia": "A", "ruolo": "P", "nome": "Maignan", "club": "Milan", "pv": 28, "mv": 6.34, "fm": 6.48, "gol": 0, "ass": 0, "amm": 2, "esp": 0, "rig": "1p", "fvm": 88, "qta": 16, "prezzo": 79, "note": "Media voto top", "altezza": 191, "infortuni": "Infortunio muscolare dic 2025", "trend": "📈", "storico": {"21_22": {"pv": 32, "mv": 6.27, "fm": 5.62, "gol": 0, "ass": 1}, "22_23": {"pv": 22, "mv": 6.16, "fm": 5.34, "gol": 0, "ass": 0}, "23_24": {"pv": 29, "mv": 6.05, "fm": 4.86, "gol": 0, "ass": 1}, "24_25": {"pv": 37, "mv": 6.18, "fm": 5.14, "gol": 0, "ass": 0}}}, {"fascia": "A", "ruolo": "P", "nome": "Carnesecchi", "club": "Atalanta", "pv": 30, "mv": 6.49, "fm": 6.65, "gol": 0, "ass": 0, "amm": 2, "esp": 0, "rig": "2p", "fvm": 80, "qta": 18, "prezzo": 78, "note": "Miglior media voto portieri", "altezza": 190, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": {"pv": 27, "mv": 6.35, "fm": 4.63, "gol": 0, "ass": 1}, "23_24": {"pv": 27, "mv": 6.19, "fm": 5.3, "gol": 0, "ass": 0}, "24_25": {"pv": 34, "mv": 6.34, "fm": 5.32, "gol": 0, "ass": 0}}}, {"fascia": "B", "ruolo": "P", "nome": "Sommer", "club": "Inter", "pv": 18, "mv": 5.89, "fm": 5.95, "gol": 0, "ass": 0, "amm": 1, "esp": 0, "rig": "0p", "fvm": 60, "qta": 13, "prezzo": 64, "note": "Stagione deludente", "altezza": 183, "infortuni": "Infortunio polso gen 2026", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 34, "mv": 6.12, "fm": 5.63, "gol": 0, "ass": 0}, "24_25": {"pv": 33, "mv": 6.18, "fm": 5.3, "gol": 0, "ass": 0}}}, {"fascia": "B", "ruolo": "P", "nome": "Falcone", "club": "Lecce", "pv": 28, "mv": 6.15, "fm": 6.25, "gol": 0, "ass": 0, "amm": 2, "esp": 0, "rig": "2p", "fvm": 35, "qta": 15, "prezzo": 30, "note": "2 rigori parati", "altezza": 189, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 10, "mv": 6.45, "fm": 4.95, "gol": 0, "ass": 0}, "22_23": {"pv": 38, "mv": 6.25, "fm": 5.09, "gol": 0, "ass": 0}, "23_24": {"pv": 38, "mv": 6.25, "fm": 4.91, "gol": 0, "ass": 0}, "24_25": {"pv": 38, "mv": 6.26, "fm": 4.79, "gol": 0, "ass": 0}}}, {"fascia": "B", "ruolo": "P", "nome": "Di Gregorio", "club": "Juventus", "pv": 22, "mv": 6.03, "fm": 6.15, "gol": 0, "ass": 0, "amm": 3, "esp": 0, "rig": "0p", "fvm": 30, "qta": 15, "prezzo": 27, "note": "Affidabile", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": {"pv": 37, "mv": 6.28, "fm": 4.99, "gol": 0, "ass": 1}, "23_24": {"pv": 33, "mv": 6.35, "fm": 5.47, "gol": 0, "ass": 0}, "24_25": {"pv": 33, "mv": 6.15, "fm": 5.18, "gol": 0, "ass": 0}}}, {"fascia": "B", "ruolo": "P", "nome": "De Gea", "club": "Fiorentina", "pv": 26, "mv": 6.1, "fm": 6.22, "gol": 0, "ass": 0, "amm": 2, "esp": 0, "rig": "0p", "fvm": 28, "qta": 12, "prezzo": 27, "note": "Titolare fisso", "altezza": 193, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 35, "mv": 6.34, "fm": 5.41, "gol": 0, "ass": 0}}}, {"fascia": "C", "ruolo": "P", "nome": "Caprile", "club": "Cagliari", "pv": 24, "mv": 6.05, "fm": 6.18, "gol": 0, "ass": 0, "amm": 2, "esp": 0, "rig": "1p", "fvm": 20, "qta": 12, "prezzo": 21, "note": "Titolare Cagliari", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 23, "mv": 6.26, "fm": 5.22, "gol": 0, "ass": 0}, "24_25": {"pv": 22, "mv": 6.2, "fm": 5.16, "gol": 0, "ass": 0}}}, {"fascia": "C", "ruolo": "P", "nome": "Provedel", "club": "Lazio", "pv": 18, "mv": 5.8, "fm": 5.96, "gol": 0, "ass": 0, "amm": 1, "esp": 0, "rig": "0p", "fvm": 15, "qta": 11, "prezzo": 10, "note": "Slot economico", "altezza": 193, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 31, "mv": 6.26, "fm": 4.48, "gol": 0, "ass": 0}, "22_23": {"pv": 38, "mv": 6.26, "fm": 5.46, "gol": 0, "ass": 0}, "23_24": {"pv": 30, "mv": 6.23, "fm": 5.13, "gol": 0, "ass": 0}, "24_25": {"pv": 29, "mv": 5.98, "fm": 4.53, "gol": 0, "ass": 0}}}, {"fascia": "C", "ruolo": "P", "nome": "Okoye", "club": "Udinese", "pv": 25, "mv": 6.0, "fm": 6.1, "gol": 0, "ass": 0, "amm": 3, "esp": 0, "rig": "0p", "fvm": 14, "qta": 14, "prezzo": 12, "note": "Titolare Udinese", "altezza": 192, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 21, "mv": 6.17, "fm": 4.93, "gol": 0, "ass": 0}, "24_25": {"pv": 25, "mv": 6.1, "fm": 4.4, "gol": 0, "ass": 0}}}, {"fascia": "C", "ruolo": "P", "nome": "Skorupski", "club": "Bologna", "pv": 26, "mv": 5.98, "fm": 6.08, "gol": 0, "ass": 0, "amm": 2, "esp": 0, "rig": "0p", "fvm": 14, "qta": 11, "prezzo": 13, "note": "Slot low cost", "altezza": 187, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 36, "mv": 6.24, "fm": 4.79, "gol": 0, "ass": 0}, "22_23": {"pv": 37, "mv": 6.19, "fm": 4.97, "gol": 0, "ass": 0}, "23_24": {"pv": 32, "mv": 6.17, "fm": 5.33, "gol": 0, "ass": 0}, "24_25": {"pv": 27, "mv": 6.17, "fm": 5.04, "gol": 0, "ass": 0}}}, {"fascia": "C", "ruolo": "P", "nome": "Audero", "club": "Cremonese", "pv": 22, "mv": 5.95, "fm": 6.05, "gol": 0, "ass": 0, "amm": 1, "esp": 0, "rig": "0p", "fvm": 11, "qta": 12, "prezzo": 11, "note": "Slot 1 credito", "altezza": 190, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 29, "mv": 6.12, "fm": 4.53, "gol": 0, "ass": 0}, "22_23": {"pv": 25, "mv": 6.3, "fm": 4.88, "gol": 0, "ass": 0}, "23_24": {"pv": 4, "mv": 6.0, "fm": 5.25, "gol": 0, "ass": 0}, "24_25": {"pv": 8, "mv": 6.0, "fm": 3.75, "gol": 0, "ass": 0}}}, {"fascia": "C", "ruolo": "P", "nome": "Suzuki", "club": "Parma", "pv": 26, "mv": 5.95, "fm": 6.05, "gol": 0, "ass": 0, "amm": 3, "esp": 0, "rig": "0p", "fvm": 8, "qta": 11, "prezzo": 8, "note": "Slot 1 credito", "altezza": 185, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 37, "mv": 6.22, "fm": 4.76, "gol": 0, "ass": 0}}}, {"fascia": "C", "ruolo": "P", "nome": "Milinkovic-Savic V.", "club": "Napoli", "pv": 27, "mv": 5.65, "fm": 5.74, "gol": 0, "ass": 0, "amm": 1, "esp": 0, "rig": "3p", "fvm": 37, "qta": 17, "prezzo": 25, "note": "Para rigori", "altezza": 194, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 27, "mv": 6.02, "fm": 4.85, "gol": 0, "ass": 0}, "22_23": {"pv": 38, "mv": 6.03, "fm": 4.89, "gol": 0, "ass": 0}, "23_24": {"pv": 36, "mv": 6.12, "fm": 5.24, "gol": 0, "ass": 0}, "24_25": {"pv": 37, "mv": 6.3, "fm": 5.45, "gol": 0, "ass": 0}}}, {"fascia": "S", "ruolo": "D", "nome": "Dimarco", "club": "Inter", "pv": 35, "mv": 6.6, "fm": 7.64, "gol": 7, "ass": 17, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 320, "qta": 30, "prezzo": 214, "note": "7G+17A, MVP assoluto", "altezza": 180, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 25, "mv": 6.12, "fm": 6.34, "gol": 2, "ass": 3}, "22_23": {"pv": 33, "mv": 6.21, "fm": 6.7, "gol": 4, "ass": 4}, "23_24": {"pv": 30, "mv": 6.48, "fm": 7.18, "gol": 5, "ass": 6}, "24_25": {"pv": 32, "mv": 6.31, "fm": 6.86, "gol": 4, "ass": 7}}}, {"fascia": "A", "ruolo": "D", "nome": "Palestra", "club": "Cagliari", "pv": 30, "mv": 6.3, "fm": 6.85, "gol": 5, "ass": 4, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 75, "qta": 16, "prezzo": 64, "note": "5G+4A, rivelazione", "altezza": 182, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 3, "mv": 6.0, "fm": 6.0, "gol": 0, "ass": 0}}}, {"fascia": "A", "ruolo": "D", "nome": "Bremer", "club": "Juventus", "pv": 26, "mv": 6.23, "fm": 6.7, "gol": 4, "ass": 3, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 74, "qta": 20, "prezzo": 67, "note": "4G+3A, muro Juve", "altezza": 188, "infortuni": "LCA ott 2024, rientro feb 2026", "trend": "📈", "storico": {"21_22": {"pv": 33, "mv": 6.39, "fm": 6.59, "gol": 3, "ass": 1}, "22_23": {"pv": 30, "mv": 6.05, "fm": 6.35, "gol": 4, "ass": 0}, "23_24": {"pv": 36, "mv": 6.24, "fm": 6.36, "gol": 3, "ass": 0}, "24_25": {"pv": 6, "mv": 6.5, "fm": 6.42, "gol": 0, "ass": 0}}}, {"fascia": "A", "ruolo": "D", "nome": "Kalulu", "club": "Juventus", "pv": 28, "mv": 6.2, "fm": 6.62, "gol": 3, "ass": 2, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 70, "qta": 14, "prezzo": 68, "note": "Affidabile, bonus", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 24, "mv": 6.33, "fm": 6.46, "gol": 1, "ass": 2}, "22_23": {"pv": 32, "mv": 5.75, "fm": 5.78, "gol": 1, "ass": 0}, "23_24": {"pv": 7, "mv": 5.86, "fm": 5.86, "gol": 0, "ass": 0}, "24_25": {"pv": 28, "mv": 6.02, "fm": 6.05, "gol": 1, "ass": 0}}}, {"fascia": "A", "ruolo": "D", "nome": "Akanji", "club": "Inter", "pv": 26, "mv": 6.2, "fm": 6.65, "gol": 3, "ass": 1, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 64, "qta": 13, "prezzo": 68, "note": "Titolare Inter", "altezza": 187, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "A", "ruolo": "D", "nome": "Pavlovic", "club": "Milan", "pv": 30, "mv": 6.2, "fm": 6.7, "gol": 5, "ass": 1, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 60, "qta": 17, "prezzo": 40, "note": "5G, centrale Milan", "altezza": 189, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 22, "mv": 5.91, "fm": 6.11, "gol": 2, "ass": 1}}}, {"fascia": "A", "ruolo": "D", "nome": "Solet", "club": "Udinese", "pv": 28, "mv": 6.15, "fm": 6.55, "gol": 3, "ass": 1, "amm": 6, "esp": 0, "rig": "0/0", "fvm": 55, "qta": 14, "prezzo": 50, "note": "Titolare fisso", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 19, "mv": 6.16, "fm": 6.29, "gol": 1, "ass": 1}}}, {"fascia": "A", "ruolo": "D", "nome": "Mancini", "club": "Roma", "pv": 32, "mv": 6.15, "fm": 6.55, "gol": 4, "ass": 1, "amm": 8, "esp": 1, "rig": "0/0", "fvm": 54, "qta": 15, "prezzo": 53, "note": "4G, 32 presenze", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 33, "mv": 5.88, "fm": 5.64, "gol": 0, "ass": 0}, "22_23": {"pv": 35, "mv": 6.11, "fm": 6.16, "gol": 1, "ass": 2}, "23_24": {"pv": 35, "mv": 5.99, "fm": 6.2, "gol": 4, "ass": 0}, "24_25": {"pv": 37, "mv": 6.18, "fm": 6.26, "gol": 2, "ass": 1}}}, {"fascia": "A", "ruolo": "D", "nome": "Ostigard", "club": "Genoa", "pv": 28, "mv": 6.3, "fm": 6.62, "gol": 3, "ass": 1, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 50, "qta": 15, "prezzo": 34, "note": "3G, solido", "altezza": 191, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 15, "mv": 5.63, "fm": 5.43, "gol": 0, "ass": 0}, "22_23": {"pv": 6, "mv": 6.0, "fm": 5.92, "gol": 0, "ass": 0}, "23_24": {"pv": 20, "mv": 5.9, "fm": 6.0, "gol": 1, "ass": 0}, "24_25": null}}, {"fascia": "A", "ruolo": "D", "nome": "Wesley", "club": "Roma", "pv": 32, "mv": 6.23, "fm": 6.47, "gol": 4, "ass": 3, "amm": 6, "esp": 1, "rig": "0/0", "fvm": 46, "qta": 14, "prezzo": 39, "note": "4G+3A", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "A", "ruolo": "D", "nome": "Rrahmani", "club": "Napoli", "pv": 26, "mv": 6.1, "fm": 6.42, "gol": 3, "ass": 1, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 45, "qta": 11, "prezzo": 41, "note": "Solido Napoli", "altezza": 186, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 33, "mv": 6.27, "fm": 6.56, "gol": 4, "ass": 0}, "22_23": {"pv": 28, "mv": 6.14, "fm": 6.36, "gol": 2, "ass": 1}, "23_24": {"pv": 30, "mv": 5.93, "fm": 6.15, "gol": 3, "ass": 0}, "24_25": {"pv": 38, "mv": 6.14, "fm": 6.17, "gol": 1, "ass": 1}}}, {"fascia": "A", "ruolo": "D", "nome": "Bastoni", "club": "Inter", "pv": 24, "mv": 6.1, "fm": 6.45, "gol": 2, "ass": 4, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 40, "qta": 13, "prezzo": 42, "note": "2G+4A", "altezza": 190, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 31, "mv": 6.21, "fm": 6.31, "gol": 1, "ass": 2}, "22_23": {"pv": 29, "mv": 6.12, "fm": 6.14, "gol": 0, "ass": 2}, "23_24": {"pv": 28, "mv": 6.32, "fm": 6.45, "gol": 1, "ass": 3}, "24_25": {"pv": 32, "mv": 6.42, "fm": 6.55, "gol": 1, "ass": 4}}}, {"fascia": "B", "ruolo": "D", "nome": "Dumfries", "club": "Inter", "pv": 26, "mv": 5.85, "fm": 6.2, "gol": 3, "ass": 5, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 56, "qta": 12, "prezzo": 48, "note": "3G+5A", "altezza": 187, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 32, "mv": 6.22, "fm": 6.77, "gol": 5, "ass": 4}, "22_23": {"pv": 34, "mv": 5.91, "fm": 6.0, "gol": 1, "ass": 4}, "23_24": {"pv": 30, "mv": 6.1, "fm": 6.53, "gol": 4, "ass": 3}, "24_25": {"pv": 29, "mv": 6.19, "fm": 6.91, "gol": 7, "ass": 2}}}, {"fascia": "B", "ruolo": "D", "nome": "N'Dicka", "club": "Roma", "pv": 28, "mv": 6.12, "fm": 6.52, "gol": 3, "ass": 0, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 51, "qta": 12, "prezzo": 54, "note": "3G, Roma", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 25, "mv": 5.86, "fm": 5.86, "gol": 0, "ass": 3}, "24_25": {"pv": 38, "mv": 6.05, "fm": 6.03, "gol": 0, "ass": 0}}}, {"fascia": "B", "ruolo": "D", "nome": "Bisseck", "club": "Inter", "pv": 26, "mv": 6.22, "fm": 6.62, "gol": 3, "ass": 1, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 41, "qta": 15, "prezzo": 40, "note": "3G, Inter", "altezza": 192, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 11, "mv": 6.36, "fm": 7.0, "gol": 2, "ass": 1}, "24_25": {"pv": 27, "mv": 6.0, "fm": 6.33, "gol": 3, "ass": 2}}}, {"fascia": "B", "ruolo": "D", "nome": "Spinazzola", "club": "Napoli", "pv": 22, "mv": 6.1, "fm": 6.3, "gol": 2, "ass": 3, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 33, "qta": 16, "prezzo": 22, "note": "2G+3A", "altezza": 177, "infortuni": "Storico infortuni muscolari", "trend": "📈", "storico": {"21_22": {"pv": 2, "mv": 6.25, "fm": 6.0, "gol": 0, "ass": 0}, "22_23": {"pv": 26, "mv": 6.04, "fm": 6.25, "gol": 1, "ass": 4}, "23_24": {"pv": 23, "mv": 6.09, "fm": 6.3, "gol": 1, "ass": 2}, "24_25": {"pv": 23, "mv": 6.07, "fm": 6.22, "gol": 1, "ass": 1}}}, {"fascia": "B", "ruolo": "D", "nome": "Kelly L.", "club": "Juventus", "pv": 25, "mv": 6.1, "fm": 6.3, "gol": 2, "ass": 2, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 30, "qta": 11, "prezzo": 26, "note": "Titolare Juve", "altezza": 185, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 12, "mv": 5.67, "fm": 5.62, "gol": 0, "ass": 0}}}, {"fascia": "B", "ruolo": "D", "nome": "Dodò", "club": "Fiorentina", "pv": 24, "mv": 6.05, "fm": 6.3, "gol": 2, "ass": 4, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 30, "qta": 10, "prezzo": 27, "note": "2G+4A", "altezza": 175, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "B", "ruolo": "D", "nome": "Vasquez", "club": "Genoa", "pv": 28, "mv": 6.05, "fm": 6.28, "gol": 2, "ass": 3, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 29, "qta": 11, "prezzo": 28, "note": "2G+3A", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 28, "mv": 5.89, "fm": 5.88, "gol": 1, "ass": 0}, "22_23": {"pv": 23, "mv": 5.78, "fm": 5.76, "gol": 1, "ass": 0}, "23_24": {"pv": 35, "mv": 6.16, "fm": 6.19, "gol": 1, "ass": 1}, "24_25": {"pv": 36, "mv": 6.06, "fm": 6.18, "gol": 3, "ass": 0}}}, {"fascia": "B", "ruolo": "D", "nome": "Di Lorenzo", "club": "Napoli", "pv": 28, "mv": 6.05, "fm": 6.3, "gol": 2, "ass": 5, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 28, "qta": 10, "prezzo": 30, "note": "2G+5A", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 33, "mv": 6.2, "fm": 6.36, "gol": 1, "ass": 4}, "22_23": {"pv": 37, "mv": 6.26, "fm": 6.58, "gol": 3, "ass": 4}, "23_24": {"pv": 36, "mv": 6.07, "fm": 6.21, "gol": 1, "ass": 5}, "24_25": {"pv": 37, "mv": 6.15, "fm": 6.36, "gol": 3, "ass": 2}}}, {"fascia": "B", "ruolo": "D", "nome": "Miranda J.", "club": "Bologna", "pv": 28, "mv": 6.05, "fm": 6.22, "gol": 2, "ass": 3, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 25, "qta": 10, "prezzo": 21, "note": "Titolare Bologna", "altezza": 179, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 29, "mv": 6.05, "fm": 6.16, "gol": 0, "ass": 6}}}, {"fascia": "B", "ruolo": "D", "nome": "Delprato", "club": "Parma", "pv": 28, "mv": 6.05, "fm": 6.2, "gol": 2, "ass": 2, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 25, "qta": 10, "prezzo": 17, "note": "Bonus possibili", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 34, "mv": 6.03, "fm": 6.21, "gol": 4, "ass": 0}}}, {"fascia": "B", "ruolo": "D", "nome": "Scalvini", "club": "Atalanta", "pv": 24, "mv": 6.0, "fm": 6.2, "gol": 1, "ass": 1, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 22, "qta": 15, "prezzo": 21, "note": "Titolare Atalanta", "altezza": 189, "infortuni": "LCA apr 2024", "trend": "📈", "storico": {"21_22": {"pv": 14, "mv": 5.96, "fm": 6.14, "gol": 1, "ass": 0}, "22_23": {"pv": 32, "mv": 5.95, "fm": 6.03, "gol": 2, "ass": 0}, "23_24": {"pv": 33, "mv": 6.06, "fm": 6.2, "gol": 1, "ass": 3}, "24_25": {"pv": 4, "mv": 5.5, "fm": 5.25, "gol": 0, "ass": 0}}}, {"fascia": "B", "ruolo": "D", "nome": "Valeri", "club": "Parma", "pv": 28, "mv": 6.0, "fm": 6.2, "gol": 2, "ass": 3, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 22, "qta": 11, "prezzo": 23, "note": "2G+3A", "altezza": 182, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": {"pv": 37, "mv": 6.08, "fm": 6.31, "gol": 2, "ass": 4}, "23_24": {"pv": 15, "mv": 5.6, "fm": 5.57, "gol": 0, "ass": 1}, "24_25": {"pv": 34, "mv": 5.94, "fm": 6.25, "gol": 2, "ass": 5}}}, {"fascia": "B", "ruolo": "D", "nome": "Tomori", "club": "Milan", "pv": 20, "mv": 6.1, "fm": 6.25, "gol": 1, "ass": 0, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 21, "qta": 8, "prezzo": 14, "note": "Buona media voto", "altezza": 188, "infortuni": "Infortunio muscolare set 2025", "trend": "📈", "storico": {"21_22": {"pv": 31, "mv": 6.29, "fm": 6.23, "gol": 0, "ass": 0}, "22_23": {"pv": 33, "mv": 6.08, "fm": 6.09, "gol": 1, "ass": 0}, "23_24": {"pv": 25, "mv": 6.0, "fm": 6.32, "gol": 4, "ass": 0}, "24_25": {"pv": 18, "mv": 5.86, "fm": 5.81, "gol": 0, "ass": 1}}}, {"fascia": "B", "ruolo": "D", "nome": "Ramon", "club": "Como", "pv": 22, "mv": 6.0, "fm": 6.2, "gol": 2, "ass": 1, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 23, "qta": 10, "prezzo": 21, "note": "Titolare Como", "altezza": 184, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "D", "nome": "Zappacosta", "club": "Atalanta", "pv": 22, "mv": 5.98, "fm": 6.12, "gol": 1, "ass": 3, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 18, "qta": 12, "prezzo": 15, "note": "Bonus assist", "altezza": 183, "infortuni": "Storico infortuni", "trend": "📉", "storico": {"21_22": {"pv": 31, "mv": 6.08, "fm": 6.24, "gol": 1, "ass": 5}, "22_23": {"pv": 21, "mv": 6.12, "fm": 6.64, "gol": 4, "ass": 1}, "23_24": {"pv": 31, "mv": 5.92, "fm": 6.06, "gol": 2, "ass": 1}, "24_25": {"pv": 30, "mv": 5.98, "fm": 6.4, "gol": 4, "ass": 2}}}, {"fascia": "C", "ruolo": "D", "nome": "Carlos Augusto", "club": "Inter", "pv": 24, "mv": 5.98, "fm": 6.15, "gol": 2, "ass": 2, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 18, "qta": 10, "prezzo": 16, "note": "Jolly Inter", "altezza": 180, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": {"pv": 35, "mv": 6.16, "fm": 6.76, "gol": 6, "ass": 5}, "23_24": {"pv": 35, "mv": 6.14, "fm": 6.21, "gol": 0, "ass": 3}, "24_25": {"pv": 28, "mv": 6.2, "fm": 6.61, "gol": 3, "ass": 3}}}, {"fascia": "C", "ruolo": "D", "nome": "Kempf", "club": "Como", "pv": 24, "mv": 5.98, "fm": 6.15, "gol": 2, "ass": 1, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 18, "qta": 16, "prezzo": 19, "note": "Titolare Como", "altezza": 193, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 31, "mv": 5.85, "fm": 5.76, "gol": 0, "ass": 0}}}, {"fascia": "C", "ruolo": "D", "nome": "Tavares N.", "club": "Lazio", "pv": 24, "mv": 5.98, "fm": 6.15, "gol": 1, "ass": 3, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 18, "qta": 6, "prezzo": 18, "note": "Bonus assist", "altezza": 180, "infortuni": "Infortunio muscolare ott 2025", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 23, "mv": 6.28, "fm": 6.5, "gol": 0, "ass": 7}}}, {"fascia": "C", "ruolo": "D", "nome": "Obrador", "club": "Torino", "pv": 22, "mv": 6.05, "fm": 6.18, "gol": 1, "ass": 2, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 16, "qta": 10, "prezzo": 11, "note": "Slot", "altezza": 178, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "D", "nome": "Gila", "club": "Lazio", "pv": 27, "mv": 5.95, "fm": 6.08, "gol": 1, "ass": 0, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 16, "qta": 8, "prezzo": 14, "note": "Slot", "altezza": 186, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": {"pv": 2, "mv": 5.5, "fm": 5.5, "gol": 0, "ass": 0}, "23_24": {"pv": 21, "mv": 6.02, "fm": 5.93, "gol": 0, "ass": 0}, "24_25": {"pv": 32, "mv": 6.05, "fm": 5.95, "gol": 1, "ass": 0}}}, {"fascia": "C", "ruolo": "D", "nome": "Romagnoli", "club": "Lazio", "pv": 22, "mv": 5.95, "fm": 6.08, "gol": 1, "ass": 0, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 16, "qta": 8, "prezzo": 14, "note": "Slot", "altezza": 187, "infortuni": "Infortuni frequenti", "trend": "📈", "storico": {"21_22": {"pv": 17, "mv": 6.0, "fm": 6.0, "gol": 1, "ass": 0}, "22_23": {"pv": 34, "mv": 6.21, "fm": 6.29, "gol": 2, "ass": 0}, "23_24": {"pv": 28, "mv": 5.96, "fm": 5.8, "gol": 0, "ass": 0}, "24_25": {"pv": 32, "mv": 5.84, "fm": 5.91, "gol": 2, "ass": 0}}}, {"fascia": "C", "ruolo": "D", "nome": "Cambiaso", "club": "Juventus", "pv": 22, "mv": 5.95, "fm": 6.08, "gol": 1, "ass": 2, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 15, "qta": 9, "prezzo": 16, "note": "Jolly Juve", "altezza": 175, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 25, "mv": 5.94, "fm": 6.12, "gol": 1, "ass": 4}, "22_23": {"pv": 31, "mv": 5.97, "fm": 6.03, "gol": 0, "ass": 3}, "23_24": {"pv": 34, "mv": 6.0, "fm": 6.12, "gol": 2, "ass": 3}, "24_25": {"pv": 32, "mv": 6.09, "fm": 6.31, "gol": 2, "ass": 3}}}, {"fascia": "C", "ruolo": "D", "nome": "Gallo", "club": "Lecce", "pv": 24, "mv": 5.95, "fm": 6.1, "gol": 1, "ass": 2, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 15, "qta": 10, "prezzo": 15, "note": "Slot", "altezza": 181, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": {"pv": 31, "mv": 5.82, "fm": 5.65, "gol": 0, "ass": 1}, "23_24": {"pv": 34, "mv": 5.94, "fm": 6.0, "gol": 0, "ass": 3}, "24_25": {"pv": 31, "mv": 5.79, "fm": 5.65, "gol": 0, "ass": 2}}}, {"fascia": "C", "ruolo": "D", "nome": "Marusic", "club": "Lazio", "pv": 24, "mv": 5.95, "fm": 6.05, "gol": 1, "ass": 1, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 15, "qta": 8, "prezzo": 10, "note": "Slot", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 33, "mv": 5.65, "fm": 5.65, "gol": 1, "ass": 0}, "22_23": {"pv": 33, "mv": 6.02, "fm": 5.92, "gol": 0, "ass": 2}, "23_24": {"pv": 37, "mv": 5.72, "fm": 5.73, "gol": 1, "ass": 0}, "24_25": {"pv": 31, "mv": 5.85, "fm": 6.16, "gol": 4, "ass": 0}}}, {"fascia": "C", "ruolo": "D", "nome": "Angori", "club": "Pisa", "pv": 22, "mv": 5.9, "fm": 6.05, "gol": 1, "ass": 3, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 13, "qta": 9, "prezzo": 13, "note": "Slot", "altezza": 181, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "D", "nome": "Buongiorno", "club": "Napoli", "pv": 25, "mv": 5.9, "fm": 6.02, "gol": 1, "ass": 0, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 13, "qta": 8, "prezzo": 11, "note": "Slot", "altezza": 190, "infortuni": "Infortunio nov 2025", "trend": "📉", "storico": {"21_22": {"pv": 18, "mv": 5.86, "fm": 5.81, "gol": 0, "ass": 1}, "22_23": {"pv": 34, "mv": 6.12, "fm": 6.15, "gol": 1, "ass": 2}, "23_24": {"pv": 29, "mv": 6.31, "fm": 6.5, "gol": 3, "ass": 0}, "24_25": {"pv": 22, "mv": 6.36, "fm": 6.45, "gol": 1, "ass": 0}}}, {"fascia": "C", "ruolo": "D", "nome": "Baschirotto", "club": "Cremonese", "pv": 28, "mv": 5.92, "fm": 6.05, "gol": 1, "ass": 0, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 13, "qta": 9, "prezzo": 12, "note": "Slot", "altezza": 192, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": {"pv": 37, "mv": 6.07, "fm": 6.23, "gol": 3, "ass": 0}, "23_24": {"pv": 37, "mv": 5.76, "fm": 5.72, "gol": 0, "ass": 1}, "24_25": {"pv": 38, "mv": 5.86, "fm": 5.97, "gol": 2, "ass": 0}}}, {"fascia": "C", "ruolo": "D", "nome": "Bellanova", "club": "Atalanta", "pv": 24, "mv": 5.9, "fm": 6.02, "gol": 1, "ass": 4, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 12, "qta": 6, "prezzo": 11, "note": "Bonus assist", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 31, "mv": 5.82, "fm": 5.9, "gol": 1, "ass": 1}, "22_23": {"pv": 11, "mv": 6.0, "fm": 6.0, "gol": 0, "ass": 0}, "23_24": {"pv": 36, "mv": 6.14, "fm": 6.35, "gol": 1, "ass": 7}, "24_25": {"pv": 35, "mv": 6.04, "fm": 6.26, "gol": 0, "ass": 9}}}, {"fascia": "C", "ruolo": "D", "nome": "Diego Carlos", "club": "Como", "pv": 22, "mv": 5.88, "fm": 6.0, "gol": 1, "ass": 0, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 12, "qta": 8, "prezzo": 10, "note": "Slot", "altezza": 186, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "D", "nome": "Idzes", "club": "Sassuolo", "pv": 26, "mv": 5.9, "fm": 5.98, "gol": 1, "ass": 0, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 12, "qta": 8, "prezzo": 8, "note": "Slot", "altezza": 192, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 35, "mv": 5.96, "fm": 5.97, "gol": 1, "ass": 0}}}, {"fascia": "C", "ruolo": "D", "nome": "Coco", "club": "Torino", "pv": 24, "mv": 5.9, "fm": 6.02, "gol": 1, "ass": 0, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 12, "qta": 9, "prezzo": 13, "note": "Slot", "altezza": 186, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 32, "mv": 5.86, "fm": 5.83, "gol": 2, "ass": 0}}}, {"fascia": "C", "ruolo": "D", "nome": "Gutierrez", "club": "Napoli", "pv": 22, "mv": 5.88, "fm": 6.0, "gol": 0, "ass": 2, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 12, "qta": 10, "prezzo": 12, "note": "Slot", "altezza": 175, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "D", "nome": "Beukema", "club": "Napoli", "pv": 22, "mv": 5.88, "fm": 5.98, "gol": 1, "ass": 0, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 10, "qta": 10, "prezzo": 11, "note": "Slot", "altezza": 189, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 30, "mv": 6.02, "fm": 6.02, "gol": 1, "ass": 0}, "24_25": {"pv": 34, "mv": 5.93, "fm": 5.94, "gol": 0, "ass": 1}}}, {"fascia": "S", "ruolo": "C", "nome": "Paz N.", "club": "Como", "pv": 35, "mv": 6.37, "fm": 7.3, "gol": 12, "ass": 5, "amm": 5, "esp": 0, "rig": "0/2", "fvm": 245, "qta": 26, "prezzo": 164, "note": "12G+5A, Champions", "altezza": 182, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 33, "mv": 6.38, "fm": 6.95, "gol": 6, "ass": 7}}}, {"fascia": "S", "ruolo": "C", "nome": "Calhanoglu", "club": "Inter", "pv": 22, "mv": 6.52, "fm": 7.64, "gol": 9, "ass": 4, "amm": 7, "esp": 0, "rig": "4/5", "fvm": 215, "qta": 24, "prezzo": 194, "note": "Rigorista, fantamedia top", "altezza": 187, "infortuni": "Infortunio feb 2026", "trend": "📈", "storico": {"21_22": {"pv": 33, "mv": 6.36, "fm": 7.2, "gol": 7, "ass": 12}, "22_23": {"pv": 33, "mv": 6.36, "fm": 6.74, "gol": 3, "ass": 5}, "23_24": {"pv": 32, "mv": 6.47, "fm": 7.7, "gol": 13, "ass": 3}, "24_25": {"pv": 28, "mv": 6.34, "fm": 6.89, "gol": 5, "ass": 6}}}, {"fascia": "S", "ruolo": "C", "nome": "McTominay", "club": "Napoli", "pv": 33, "mv": 6.39, "fm": 7.26, "gol": 10, "ass": 2, "amm": 1, "esp": 0, "rig": "0/1", "fvm": 215, "qta": 25, "prezzo": 183, "note": "10G, titolarissimo", "altezza": 187, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 34, "mv": 6.56, "fm": 7.66, "gol": 12, "ass": 3}}}, {"fascia": "A", "ruolo": "C", "nome": "Rabiot", "club": "Milan", "pv": 29, "mv": 6.33, "fm": 6.98, "gol": 6, "ass": 4, "amm": 4, "esp": 1, "rig": "0/0", "fvm": 195, "qta": 23, "prezzo": 190, "note": "FVM altissimo", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 29, "mv": 5.71, "fm": 5.69, "gol": 0, "ass": 2}, "22_23": {"pv": 32, "mv": 6.3, "fm": 7.03, "gol": 8, "ass": 4}, "23_24": {"pv": 31, "mv": 6.08, "fm": 6.5, "gol": 5, "ass": 2}, "24_25": null}}, {"fascia": "A", "ruolo": "C", "nome": "Orsolini", "club": "Bologna", "pv": 30, "mv": 6.25, "fm": 6.92, "gol": 8, "ass": 8, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 150, "qta": 19, "prezzo": 159, "note": "8G+8A", "altezza": 179, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 26, "mv": 6.04, "fm": 6.81, "gol": 6, "ass": 3}, "22_23": {"pv": 32, "mv": 6.16, "fm": 7.09, "gol": 11, "ass": 2}, "23_24": {"pv": 31, "mv": 6.16, "fm": 7.06, "gol": 10, "ass": 2}, "24_25": {"pv": 29, "mv": 6.53, "fm": 8.19, "gol": 15, "ass": 4}}}, {"fascia": "A", "ruolo": "C", "nome": "McKennie", "club": "Juventus", "pv": 30, "mv": 6.25, "fm": 7.0, "gol": 8, "ass": 4, "amm": 6, "esp": 0, "rig": "0/0", "fvm": 127, "qta": 18, "prezzo": 85, "note": "8G+4A", "altezza": 183, "infortuni": "Infortuni frequenti", "trend": "📈", "storico": {"21_22": {"pv": 19, "mv": 6.18, "fm": 6.63, "gol": 3, "ass": 0}, "22_23": {"pv": 15, "mv": 5.7, "fm": 5.97, "gol": 1, "ass": 1}, "23_24": {"pv": 33, "mv": 6.2, "fm": 6.32, "gol": 0, "ass": 7}, "24_25": {"pv": 31, "mv": 5.94, "fm": 6.18, "gol": 2, "ass": 3}}}, {"fascia": "A", "ruolo": "C", "nome": "Baturina", "club": "Como", "pv": 25, "mv": 6.3, "fm": 7.14, "gol": 6, "ass": 3, "amm": 0, "esp": 0, "rig": "0/0", "fvm": 95, "qta": 24, "prezzo": 81, "note": "6G, FM 7.14", "altezza": 187, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "A", "ruolo": "C", "nome": "Pulisic", "club": "Milan", "pv": 27, "mv": 6.15, "fm": 7.07, "gol": 8, "ass": 4, "amm": 0, "esp": 0, "rig": "0/1", "fvm": 100, "qta": 24, "prezzo": 90, "note": "8G+4A", "altezza": 177, "infortuni": "Storico infortuni", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 36, "mv": 6.33, "fm": 7.5, "gol": 12, "ass": 7}, "24_25": {"pv": 34, "mv": 6.38, "fm": 7.49, "gol": 11, "ass": 8}}}, {"fascia": "A", "ruolo": "C", "nome": "Vlasic", "club": "Torino", "pv": 32, "mv": 6.25, "fm": 6.88, "gol": 8, "ass": 4, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 100, "qta": 17, "prezzo": 106, "note": "8G, 32 pres.", "altezza": 178, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": {"pv": 34, "mv": 6.22, "fm": 6.82, "gol": 5, "ass": 6}, "23_24": {"pv": 33, "mv": 6.02, "fm": 6.3, "gol": 3, "ass": 2}, "24_25": {"pv": 30, "mv": 6.07, "fm": 6.67, "gol": 5, "ass": 3}}}, {"fascia": "A", "ruolo": "C", "nome": "Zaniolo", "club": "Udinese", "pv": 26, "mv": 6.15, "fm": 6.8, "gol": 6, "ass": 5, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 100, "qta": 19, "prezzo": 97, "note": "6G+5A", "altezza": 183, "infortuni": "LCA 2021, recuperato", "trend": "📈", "storico": {"21_22": {"pv": 27, "mv": 6.0, "fm": 6.02, "gol": 2, "ass": 1}, "22_23": {"pv": 13, "mv": 5.81, "fm": 5.88, "gol": 1, "ass": 0}, "23_24": null, "24_25": {"pv": 18, "mv": 6.03, "fm": 6.22, "gol": 2, "ass": 1}}}, {"fascia": "A", "ruolo": "C", "nome": "De Bruyne", "club": "Napoli", "pv": 17, "mv": 6.26, "fm": 7.24, "gol": 5, "ass": 2, "amm": 1, "esp": 0, "rig": "3/3", "fvm": 92, "qta": 21, "prezzo": 62, "note": "Rigorista", "altezza": 181, "infortuni": "Infortuni muscolari", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "A", "ruolo": "C", "nome": "Modric", "club": "Milan", "pv": 26, "mv": 6.4, "fm": 6.9, "gol": 4, "ass": 5, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 90, "qta": 18, "prezzo": 77, "note": "Media voto stellare", "altezza": 172, "infortuni": "Gestione carichi (39 anni)", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "A", "ruolo": "C", "nome": "Da Cunha", "club": "Como", "pv": 35, "mv": 6.34, "fm": 6.91, "gol": 6, "ass": 4, "amm": 4, "esp": 0, "rig": "4/4", "fvm": 85, "qta": 20, "prezzo": 77, "note": "Rigorista, 35 pres.", "altezza": 176, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 35, "mv": 6.1, "fm": 6.36, "gol": 3, "ass": 2}}}, {"fascia": "A", "ruolo": "C", "nome": "Atta", "club": "Udinese", "pv": 28, "mv": 6.18, "fm": 6.75, "gol": 5, "ass": 4, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 85, "qta": 20, "prezzo": 83, "note": "Sottovalutato", "altezza": 184, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 23, "mv": 6.0, "fm": 5.89, "gol": 0, "ass": 0}}}, {"fascia": "A", "ruolo": "C", "nome": "Konè I.", "club": "Sassuolo", "pv": 28, "mv": 6.15, "fm": 6.72, "gol": 5, "ass": 5, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 77, "qta": 17, "prezzo": 82, "note": "5G+5A", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "A", "ruolo": "C", "nome": "Mandragora", "club": "Fiorentina", "pv": 28, "mv": 6.1, "fm": 6.6, "gol": 4, "ass": 5, "amm": 7, "esp": 0, "rig": "0/0", "fvm": 70, "qta": 17, "prezzo": 47, "note": "4G+5A", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 18, "mv": 6.14, "fm": 6.06, "gol": 0, "ass": 2}, "22_23": {"pv": 28, "mv": 6.04, "fm": 6.25, "gol": 2, "ass": 4}, "23_24": {"pv": 30, "mv": 5.95, "fm": 6.28, "gol": 3, "ass": 3}, "24_25": {"pv": 27, "mv": 6.19, "fm": 6.67, "gol": 4, "ass": 4}}}, {"fascia": "A", "ruolo": "C", "nome": "Conceicao", "club": "Juventus", "pv": 24, "mv": 6.2, "fm": 6.85, "gol": 5, "ass": 3, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 65, "qta": 18, "prezzo": 55, "note": "5G+3A", "altezza": 175, "infortuni": "Infortunio ott 2025", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 25, "mv": 6.12, "fm": 6.5, "gol": 3, "ass": 3}}}, {"fascia": "B", "ruolo": "C", "nome": "Barella", "club": "Inter", "pv": 26, "mv": 6.26, "fm": 6.75, "gol": 4, "ass": 8, "amm": 6, "esp": 0, "rig": "0/0", "fvm": 58, "qta": 18, "prezzo": 62, "note": "4G+8A", "altezza": 172, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 36, "mv": 6.49, "fm": 6.92, "gol": 3, "ass": 11}, "22_23": {"pv": 35, "mv": 6.26, "fm": 6.86, "gol": 6, "ass": 6}, "23_24": {"pv": 37, "mv": 6.38, "fm": 6.53, "gol": 2, "ass": 3}, "24_25": {"pv": 33, "mv": 6.26, "fm": 6.65, "gol": 3, "ass": 6}}}, {"fascia": "B", "ruolo": "C", "nome": "Santos A.", "club": "Napoli", "pv": 13, "mv": 6.35, "fm": 7.23, "gol": 4, "ass": 0, "amm": 1, "esp": 0, "rig": "0/0", "fvm": 54, "qta": 12, "prezzo": 36, "note": "FM 7.23", "altezza": 178, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "B", "ruolo": "C", "nome": "Taylor K.", "club": "Lazio", "pv": 28, "mv": 6.15, "fm": 6.75, "gol": 4, "ass": 3, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 52, "qta": 14, "prezzo": 44, "note": "4G+3A", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "B", "ruolo": "C", "nome": "Locatelli", "club": "Juventus", "pv": 28, "mv": 6.08, "fm": 6.52, "gol": 3, "ass": 5, "amm": 6, "esp": 0, "rig": "0/0", "fvm": 52, "qta": 12, "prezzo": 47, "note": "Titolarissimo Juve", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 29, "mv": 6.16, "fm": 6.47, "gol": 3, "ass": 3}, "22_23": {"pv": 31, "mv": 6.15, "fm": 6.08, "gol": 0, "ass": 2}, "23_24": {"pv": 35, "mv": 5.83, "fm": 5.94, "gol": 1, "ass": 4}, "24_25": {"pv": 35, "mv": 6.19, "fm": 6.26, "gol": 2, "ass": 1}}}, {"fascia": "B", "ruolo": "C", "nome": "Ekkelenkamp", "club": "Udinese", "pv": 26, "mv": 6.15, "fm": 6.65, "gol": 4, "ass": 5, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 51, "qta": 14, "prezzo": 54, "note": "Sottovalutato", "altezza": 184, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 33, "mv": 5.97, "fm": 6.27, "gol": 3, "ass": 2}}}, {"fascia": "B", "ruolo": "C", "nome": "Rowe", "club": "Bologna", "pv": 26, "mv": 6.1, "fm": 6.58, "gol": 4, "ass": 5, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 51, "qta": 15, "prezzo": 50, "note": "4G+5A", "altezza": 178, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "B", "ruolo": "C", "nome": "Strefezza", "club": "Parma", "pv": 25, "mv": 6.1, "fm": 6.55, "gol": 4, "ass": 5, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 50, "qta": 13, "prezzo": 34, "note": "4G+5A", "altezza": 173, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": {"pv": 34, "mv": 6.31, "fm": 6.97, "gol": 8, "ass": 4}, "23_24": {"pv": 19, "mv": 5.82, "fm": 5.87, "gol": 1, "ass": 0}, "24_25": {"pv": 37, "mv": 6.27, "fm": 6.8, "gol": 6, "ass": 4}}}, {"fascia": "B", "ruolo": "C", "nome": "Thuram K.", "club": "Juventus", "pv": 26, "mv": 6.05, "fm": 6.55, "gol": 3, "ass": 4, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 46, "qta": 14, "prezzo": 39, "note": "Titolare Juve", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 33, "mv": 6.3, "fm": 6.74, "gol": 4, "ass": 5}}}, {"fascia": "B", "ruolo": "C", "nome": "Konè M.", "club": "Roma", "pv": 26, "mv": 6.05, "fm": 6.45, "gol": 3, "ass": 4, "amm": 5, "esp": 0, "rig": "0/0", "fvm": 44, "qta": 13, "prezzo": 40, "note": "Titolare Roma", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "B", "ruolo": "C", "nome": "Saelemaekers", "club": "Milan", "pv": 26, "mv": 6.08, "fm": 6.48, "gol": 3, "ass": 5, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 39, "qta": 15, "prezzo": 41, "note": "3G+5A", "altezza": 178, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 34, "mv": 6.01, "fm": 6.16, "gol": 1, "ass": 3}, "22_23": {"pv": 29, "mv": 5.91, "fm": 6.17, "gol": 2, "ass": 2}, "23_24": {"pv": 30, "mv": 6.08, "fm": 6.47, "gol": 4, "ass": 3}, "24_25": {"pv": 22, "mv": 6.39, "fm": 7.36, "gol": 7, "ass": 3}}}, {"fascia": "B", "ruolo": "C", "nome": "Thorstvedt", "club": "Sassuolo", "pv": 24, "mv": 6.05, "fm": 6.48, "gol": 4, "ass": 3, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 40, "qta": 15, "prezzo": 39, "note": "4G+3A", "altezza": 186, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": {"pv": 25, "mv": 6.0, "fm": 6.2, "gol": 2, "ass": 1}, "23_24": {"pv": 34, "mv": 5.94, "fm": 6.4, "gol": 6, "ass": 1}, "24_25": null}}, {"fascia": "B", "ruolo": "C", "nome": "Ederson D.S.", "club": "Atalanta", "pv": 24, "mv": 6.0, "fm": 6.35, "gol": 2, "ass": 3, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 35, "qta": 13, "prezzo": 32, "note": "Atalanta", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 15, "mv": 6.17, "fm": 6.47, "gol": 2, "ass": 1}, "22_23": {"pv": 34, "mv": 5.94, "fm": 6.0, "gol": 1, "ass": 1}, "23_24": {"pv": 36, "mv": 6.14, "fm": 6.56, "gol": 6, "ass": 1}, "24_25": {"pv": 36, "mv": 6.17, "fm": 6.49, "gol": 4, "ass": 2}}}, {"fascia": "B", "ruolo": "C", "nome": "Fagioli", "club": "Fiorentina", "pv": 22, "mv": 6.05, "fm": 6.42, "gol": 3, "ass": 4, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 35, "qta": 11, "prezzo": 37, "note": "3G+4A", "altezza": 178, "infortuni": "Squalifica 2023", "trend": "📈", "storico": {"21_22": {"pv": 0, "mv": 0.0, "fm": 0.0, "gol": 0, "ass": 0}, "22_23": {"pv": 23, "mv": 6.13, "fm": 6.59, "gol": 3, "ass": 3}, "23_24": {"pv": 8, "mv": 6.06, "fm": 6.25, "gol": 0, "ass": 2}, "24_25": {"pv": 24, "mv": 5.92, "fm": 6.04, "gol": 1, "ass": 2}}}, {"fascia": "B", "ruolo": "C", "nome": "Gudmundsson A.", "club": "Fiorentina", "pv": 22, "mv": 6.0, "fm": 6.4, "gol": 3, "ass": 4, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 35, "qta": 13, "prezzo": 34, "note": "3G+4A", "altezza": 182, "infortuni": "Infortuni frequenti", "trend": "📉", "storico": {"21_22": {"pv": 11, "mv": 5.68, "fm": 5.82, "gol": 1, "ass": 0}, "22_23": null, "23_24": {"pv": 35, "mv": 6.47, "fm": 7.64, "gol": 14, "ass": 4}, "24_25": {"pv": 21, "mv": 6.12, "fm": 6.98, "gol": 6, "ass": 1}}}, {"fascia": "B", "ruolo": "C", "nome": "Isaksen", "club": "Lazio", "pv": 24, "mv": 6.0, "fm": 6.4, "gol": 3, "ass": 4, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 35, "qta": 16, "prezzo": 30, "note": "3G+4A", "altezza": 180, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 23, "mv": 6.07, "fm": 6.46, "gol": 3, "ass": 1}, "24_25": {"pv": 37, "mv": 6.05, "fm": 6.34, "gol": 4, "ass": 1}}}, {"fascia": "B", "ruolo": "C", "nome": "Malinovskyi", "club": "Genoa", "pv": 22, "mv": 6.0, "fm": 6.35, "gol": 2, "ass": 4, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 34, "qta": 15, "prezzo": 23, "note": "Bonus possibili", "altezza": 182, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 29, "mv": 6.26, "fm": 6.88, "gol": 6, "ass": 5}, "22_23": {"pv": 12, "mv": 6.0, "fm": 6.38, "gol": 1, "ass": 2}, "23_24": {"pv": 23, "mv": 6.22, "fm": 6.63, "gol": 4, "ass": 1}, "24_25": {"pv": 9, "mv": 6.33, "fm": 6.44, "gol": 0, "ass": 2}}}, {"fascia": "C", "ruolo": "C", "nome": "Cristante", "club": "Roma", "pv": 26, "mv": 6.05, "fm": 6.4, "gol": 3, "ass": 3, "amm": 6, "esp": 0, "rig": "0/0", "fvm": 31, "qta": 13, "prezzo": 21, "note": "Titolarissimo Roma", "altezza": 185, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 34, "mv": 5.97, "fm": 5.96, "gol": 2, "ass": 0}, "22_23": {"pv": 36, "mv": 5.99, "fm": 5.89, "gol": 1, "ass": 1}, "23_24": {"pv": 37, "mv": 6.11, "fm": 6.35, "gol": 3, "ass": 4}, "24_25": {"pv": 28, "mv": 6.2, "fm": 6.59, "gol": 4, "ass": 3}}}, {"fascia": "C", "ruolo": "C", "nome": "Politano", "club": "Napoli", "pv": 22, "mv": 5.98, "fm": 6.28, "gol": 3, "ass": 3, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 28, "qta": 13, "prezzo": 24, "note": "Titolare Napoli", "altezza": 170, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 31, "mv": 6.13, "fm": 6.5, "gol": 3, "ass": 4}, "22_23": {"pv": 23, "mv": 6.22, "fm": 6.54, "gol": 3, "ass": 2}, "23_24": {"pv": 37, "mv": 6.19, "fm": 6.89, "gol": 8, "ass": 7}, "24_25": {"pv": 37, "mv": 6.11, "fm": 6.42, "gol": 3, "ass": 4}}}, {"fascia": "C", "ruolo": "C", "nome": "Zaccagni", "club": "Lazio", "pv": 24, "mv": 6.0, "fm": 6.35, "gol": 3, "ass": 4, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 25, "qta": 13, "prezzo": 27, "note": "3G+4A", "altezza": 176, "infortuni": "Infortuni muscolari", "trend": "📉", "storico": {"21_22": {"pv": 30, "mv": 6.3, "fm": 6.93, "gol": 6, "ass": 4}, "22_23": {"pv": 35, "mv": 6.54, "fm": 7.44, "gol": 10, "ass": 6}, "23_24": {"pv": 28, "mv": 6.23, "fm": 6.77, "gol": 6, "ass": 1}, "24_25": {"pv": 34, "mv": 6.28, "fm": 7.01, "gol": 8, "ass": 6}}}, {"fascia": "C", "ruolo": "C", "nome": "Zambo Anguissa", "club": "Napoli", "pv": 24, "mv": 5.98, "fm": 6.28, "gol": 2, "ass": 3, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 25, "qta": 15, "prezzo": 24, "note": "Titolare Napoli", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 23, "mv": 6.28, "fm": 6.22, "gol": 0, "ass": 1}, "22_23": {"pv": 36, "mv": 6.25, "fm": 6.6, "gol": 3, "ass": 5}, "23_24": {"pv": 33, "mv": 5.82, "fm": 5.85, "gol": 0, "ass": 2}, "24_25": {"pv": 35, "mv": 6.41, "fm": 6.97, "gol": 6, "ass": 4}}}, {"fascia": "C", "ruolo": "C", "nome": "Basic", "club": "Lazio", "pv": 18, "mv": 6.05, "fm": 6.42, "gol": 2, "ass": 2, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 25, "qta": 11, "prezzo": 17, "note": "Bonus possibili", "altezza": 187, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 20, "mv": 5.85, "fm": 5.88, "gol": 0, "ass": 2}, "22_23": {"pv": 14, "mv": 6.0, "fm": 6.18, "gol": 1, "ass": 0}, "23_24": {"pv": 14, "mv": 5.54, "fm": 5.36, "gol": 0, "ass": 0}, "24_25": {"pv": 0, "mv": 0.0, "fm": 0.0, "gol": 0, "ass": 0}}}, {"fascia": "C", "ruolo": "C", "nome": "Pellegrini Lo.", "club": "Roma", "pv": 22, "mv": 5.98, "fm": 6.25, "gol": 2, "ass": 3, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 24, "qta": 13, "prezzo": 22, "note": "Titolare Roma", "altezza": 180, "infortuni": "Infortuni frequenti", "trend": "📈", "storico": {"21_22": {"pv": 27, "mv": 6.28, "fm": 7.13, "gol": 9, "ass": 3}, "22_23": {"pv": 32, "mv": 5.97, "fm": 6.33, "gol": 4, "ass": 5}, "23_24": {"pv": 29, "mv": 6.14, "fm": 6.95, "gol": 8, "ass": 3}, "24_25": {"pv": 25, "mv": 5.68, "fm": 5.88, "gol": 2, "ass": 1}}}, {"fascia": "C", "ruolo": "C", "nome": "Bernabè", "club": "Parma", "pv": 24, "mv": 5.95, "fm": 6.2, "gol": 2, "ass": 3, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 23, "qta": 15, "prezzo": 20, "note": "Titolare Parma", "altezza": 181, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "C", "nome": "Casadei", "club": "Torino", "pv": 22, "mv": 5.95, "fm": 6.18, "gol": 2, "ass": 2, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 20, "qta": 13, "prezzo": 18, "note": "Giovane", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": {"pv": 0, "mv": 0.0, "fm": 0.0, "gol": 0, "ass": 0}, "23_24": null, "24_25": {"pv": 15, "mv": 6.03, "fm": 6.27, "gol": 1, "ass": 1}}}, {"fascia": "C", "ruolo": "C", "nome": "Zalewski", "club": "Atalanta", "pv": 18, "mv": 5.95, "fm": 6.18, "gol": 2, "ass": 2, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 19, "qta": 14, "prezzo": 19, "note": "Atalanta", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 13, "mv": 5.85, "fm": 5.81, "gol": 0, "ass": 0}, "22_23": {"pv": 32, "mv": 5.98, "fm": 6.16, "gol": 2, "ass": 1}, "23_24": {"pv": 22, "mv": 5.8, "fm": 5.77, "gol": 0, "ass": 1}, "24_25": {"pv": 19, "mv": 6.03, "fm": 6.21, "gol": 1, "ass": 2}}}, {"fascia": "C", "ruolo": "C", "nome": "Caqueret", "club": "Como", "pv": 22, "mv": 5.98, "fm": 6.22, "gol": 2, "ass": 3, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 18, "qta": 13, "prezzo": 19, "note": "Como", "altezza": 178, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 16, "mv": 6.34, "fm": 6.78, "gol": 2, "ass": 3}}}, {"fascia": "C", "ruolo": "C", "nome": "Folorunsho", "club": "Cagliari", "pv": 20, "mv": 5.95, "fm": 6.1, "gol": 2, "ass": 2, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 14, "qta": 10, "prezzo": 13, "note": "Slot", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 33, "mv": 6.0, "fm": 6.41, "gol": 5, "ass": 1}, "24_25": {"pv": 13, "mv": 5.96, "fm": 5.77, "gol": 0, "ass": 0}}}, {"fascia": "S", "ruolo": "A", "nome": "Malen", "club": "Roma", "pv": 18, "mv": 6.72, "fm": 8.97, "gol": 14, "ass": 2, "amm": 1, "esp": 0, "rig": "3/4", "fvm": 350, "qta": 25, "prezzo": 233, "note": "FVM 350, rigorista", "altezza": 181, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "S", "ruolo": "A", "nome": "Martinez L.", "club": "Inter", "pv": 30, "mv": 6.42, "fm": 8.25, "gol": 17, "ass": 6, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 315, "qta": 33, "prezzo": 267, "note": "17G+6A, capocannoniere", "altezza": 174, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 33, "mv": 6.38, "fm": 8.02, "gol": 21, "ass": 3}, "22_23": {"pv": 37, "mv": 6.42, "fm": 8.16, "gol": 21, "ass": 6}, "23_24": {"pv": 33, "mv": 6.65, "fm": 8.73, "gol": 24, "ass": 2}, "24_25": {"pv": 31, "mv": 6.19, "fm": 7.44, "gol": 12, "ass": 3}}}, {"fascia": "S", "ruolo": "A", "nome": "Thuram", "club": "Inter", "pv": 29, "mv": 6.43, "fm": 7.95, "gol": 13, "ass": 6, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 270, "qta": 32, "prezzo": 239, "note": "13G+6A", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 35, "mv": 6.54, "fm": 7.81, "gol": 13, "ass": 7}, "24_25": {"pv": 32, "mv": 6.33, "fm": 7.75, "gol": 14, "ass": 4}}}, {"fascia": "A", "ruolo": "A", "nome": "Hojlund", "club": "Napoli", "pv": 33, "mv": 6.21, "fm": 7.44, "gol": 12, "ass": 5, "amm": 1, "esp": 0, "rig": "1/1", "fvm": 213, "qta": 27, "prezzo": 207, "note": "12G+5A", "altezza": 191, "infortuni": "Infortuni muscolari 2023-24", "trend": "📈", "storico": {"21_22": null, "22_23": {"pv": 30, "mv": 6.12, "fm": 7.07, "gol": 9, "ass": 2}, "23_24": null, "24_25": null}}, {"fascia": "A", "ruolo": "A", "nome": "Douvikas", "club": "Como", "pv": 36, "mv": 6.18, "fm": 7.38, "gol": 14, "ass": 1, "amm": 0, "esp": 0, "rig": "1/1", "fvm": 200, "qta": 26, "prezzo": 213, "note": "14G, 36 pres.", "altezza": 194, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 12, "mv": 6.21, "fm": 6.75, "gol": 2, "ass": 1}}}, {"fascia": "A", "ruolo": "A", "nome": "Yildiz", "club": "Juventus", "pv": 35, "mv": 6.39, "fm": 7.3, "gol": 10, "ass": 6, "amm": 2, "esp": 0, "rig": "1/2", "fvm": 182, "qta": 26, "prezzo": 122, "note": "10G+6A", "altezza": 186, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 21, "mv": 6.05, "fm": 6.29, "gol": 2, "ass": 0}, "24_25": {"pv": 34, "mv": 6.34, "fm": 7.01, "gol": 7, "ass": 4}}}, {"fascia": "A", "ruolo": "A", "nome": "Scamacca", "club": "Atalanta", "pv": 22, "mv": 6.18, "fm": 7.55, "gol": 10, "ass": 1, "amm": 2, "esp": 0, "rig": "2/2", "fvm": 92, "qta": 23, "prezzo": 62, "note": "10G, rigorista", "altezza": 196, "infortuni": "LCA ago 2024", "trend": "📉", "storico": {"21_22": {"pv": 32, "mv": 6.22, "fm": 7.61, "gol": 16, "ass": 0}, "22_23": {"pv": 0, "mv": 0.0, "fm": 0.0, "gol": 0, "ass": 0}, "23_24": {"pv": 28, "mv": 6.41, "fm": 7.89, "gol": 12, "ass": 6}, "24_25": {"pv": 0, "mv": 0.0, "fm": 0.0, "gol": 0, "ass": 0}}}, {"fascia": "A", "ruolo": "A", "nome": "Davis K.", "club": "Udinese", "pv": 30, "mv": 6.32, "fm": 7.37, "gol": 10, "ass": 4, "amm": 5, "esp": 0, "rig": "4/4", "fvm": 110, "qta": 24, "prezzo": 94, "note": "10G+4A, rigorista", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 5, "mv": 6.2, "fm": 6.6, "gol": 1, "ass": 0}, "24_25": {"pv": 16, "mv": 6.0, "fm": 6.38, "gol": 2, "ass": 1}}}, {"fascia": "A", "ruolo": "A", "nome": "Krstovic", "club": "Atalanta", "pv": 32, "mv": 6.16, "fm": 7.19, "gol": 10, "ass": 5, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 92, "qta": 24, "prezzo": 98, "note": "10G+5A", "altezza": 193, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 33, "mv": 5.91, "fm": 6.3, "gol": 7, "ass": 1}, "24_25": {"pv": 37, "mv": 6.05, "fm": 6.92, "gol": 11, "ass": 5}}}, {"fascia": "A", "ruolo": "A", "nome": "Berardi", "club": "Sassuolo", "pv": 26, "mv": 6.31, "fm": 7.19, "gol": 8, "ass": 4, "amm": 2, "esp": 1, "rig": "2/3", "fvm": 90, "qta": 25, "prezzo": 77, "note": "Rigorista storico", "altezza": 171, "infortuni": "LCA apr 2023 — rischio", "trend": "📉", "storico": {"21_22": {"pv": 33, "mv": 6.71, "fm": 8.33, "gol": 15, "ass": 13}, "22_23": {"pv": 24, "mv": 6.58, "fm": 8.1, "gol": 12, "ass": 7}, "23_24": {"pv": 17, "mv": 6.53, "fm": 8.06, "gol": 9, "ass": 2}, "24_25": null}}, {"fascia": "A", "ruolo": "A", "nome": "Vlahovic", "club": "Juventus", "pv": 18, "mv": 6.14, "fm": 7.31, "gol": 7, "ass": 0, "amm": 0, "esp": 0, "rig": "1/1", "fvm": 100, "qta": 16, "prezzo": 90, "note": "Rigorista", "altezza": 190, "infortuni": "Pubalgia cronica", "trend": "📉", "storico": {"21_22": {"pv": 36, "mv": 6.4, "fm": 8.35, "gol": 24, "ass": 3}, "22_23": {"pv": 25, "mv": 6.06, "fm": 7.16, "gol": 10, "ass": 1}, "23_24": {"pv": 33, "mv": 6.18, "fm": 7.42, "gol": 16, "ass": 3}, "24_25": {"pv": 25, "mv": 6.12, "fm": 7.38, "gol": 10, "ass": 3}}}, {"fascia": "A", "ruolo": "A", "nome": "Simeone", "club": "Torino", "pv": 32, "mv": 6.08, "fm": 7.09, "gol": 11, "ass": 0, "amm": 1, "esp": 0, "rig": "0/0", "fvm": 96, "qta": 22, "prezzo": 94, "note": "11G", "altezza": 177, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 35, "mv": 6.17, "fm": 7.54, "gol": 17, "ass": 4}, "22_23": {"pv": 12, "mv": 6.29, "fm": 7.33, "gol": 4, "ass": 1}, "23_24": {"pv": 17, "mv": 5.74, "fm": 5.82, "gol": 1, "ass": 0}, "24_25": {"pv": 19, "mv": 5.92, "fm": 6.11, "gol": 1, "ass": 1}}}, {"fascia": "B", "ruolo": "A", "nome": "Soulè", "club": "Roma", "pv": 28, "mv": 6.2, "fm": 6.82, "gol": 7, "ass": 5, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 85, "qta": 20, "prezzo": 77, "note": "7G+5A", "altezza": 179, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "B", "ruolo": "A", "nome": "Laurienté", "club": "Sassuolo", "pv": 37, "mv": 6.23, "fm": 6.99, "gol": 7, "ass": 9, "amm": 4, "esp": 0, "rig": "0/0", "fvm": 82, "qta": 21, "prezzo": 80, "note": "7G+9A, 37 pres.", "altezza": 175, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "B", "ruolo": "A", "nome": "Leao", "club": "Milan", "pv": 26, "mv": 6.1, "fm": 6.72, "gol": 7, "ass": 5, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 80, "qta": 20, "prezzo": 85, "note": "7G+5A, discontinuo", "altezza": 188, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 34, "mv": 6.19, "fm": 7.06, "gol": 8, "ass": 8}}}, {"fascia": "B", "ruolo": "A", "nome": "Esposito Se.", "club": "Cagliari", "pv": 36, "mv": 6.26, "fm": 6.88, "gol": 7, "ass": 4, "amm": 3, "esp": 0, "rig": "2/3", "fvm": 70, "qta": 21, "prezzo": 47, "note": "Rigorista, 36 pres.", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 0, "mv": 0.0, "fm": 0.0, "gol": 0, "ass": 0}, "24_25": {"pv": 33, "mv": 6.17, "fm": 6.79, "gol": 8, "ass": 0}}}, {"fascia": "B", "ruolo": "A", "nome": "Pellegrino M.", "club": "Parma", "pv": 28, "mv": 6.18, "fm": 6.8, "gol": 6, "ass": 3, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 64, "qta": 18, "prezzo": 54, "note": "6G+3A", "altezza": 187, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 11, "mv": 6.14, "fm": 6.86, "gol": 3, "ass": 0}}}, {"fascia": "B", "ruolo": "A", "nome": "De Ketelaere", "club": "Atalanta", "pv": 24, "mv": 6.1, "fm": 6.65, "gol": 5, "ass": 5, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 59, "qta": 16, "prezzo": 53, "note": "5G+5A", "altezza": 181, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": {"pv": 27, "mv": 5.74, "fm": 5.74, "gol": 0, "ass": 1}, "23_24": {"pv": 33, "mv": 6.32, "fm": 7.39, "gol": 10, "ass": 8}, "24_25": {"pv": 34, "mv": 6.19, "fm": 6.94, "gol": 7, "ass": 5}}}, {"fascia": "B", "ruolo": "A", "nome": "Pinamonti", "club": "Sassuolo", "pv": 28, "mv": 6.1, "fm": 6.62, "gol": 6, "ass": 3, "amm": 2, "esp": 0, "rig": "2/3", "fvm": 52, "qta": 16, "prezzo": 51, "note": "Rigorista", "altezza": 192, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 36, "mv": 6.15, "fm": 7.21, "gol": 13, "ass": 1}, "22_23": {"pv": 32, "mv": 5.67, "fm": 6.06, "gol": 5, "ass": 0}, "23_24": {"pv": 37, "mv": 5.92, "fm": 6.7, "gol": 11, "ass": 1}, "24_25": {"pv": 36, "mv": 5.96, "fm": 6.68, "gol": 10, "ass": 1}}}, {"fascia": "B", "ruolo": "A", "nome": "Dybala", "club": "Roma", "pv": 18, "mv": 6.15, "fm": 6.75, "gol": 5, "ass": 4, "amm": 1, "esp": 0, "rig": "0/0", "fvm": 50, "qta": 13, "prezzo": 53, "note": "Top quando gioca", "altezza": 177, "infortuni": "⚠️ Infortuni cronici", "trend": "📉", "storico": {"21_22": {"pv": 28, "mv": 6.36, "fm": 7.45, "gol": 10, "ass": 5}, "22_23": {"pv": 25, "mv": 6.64, "fm": 8.24, "gol": 12, "ass": 6}, "23_24": {"pv": 27, "mv": 6.48, "fm": 8.2, "gol": 13, "ass": 9}, "24_25": {"pv": 20, "mv": 6.48, "fm": 7.48, "gol": 6, "ass": 3}}}, {"fascia": "B", "ruolo": "A", "nome": "Bonazzoli", "club": "Cremonese", "pv": 35, "mv": 6.16, "fm": 7.01, "gol": 10, "ass": 2, "amm": 4, "esp": 0, "rig": "3/3", "fvm": 40, "qta": 22, "prezzo": 34, "note": "10G, rigorista", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 31, "mv": 6.23, "fm": 7.1, "gol": 10, "ass": 0}, "22_23": {"pv": 21, "mv": 6.0, "fm": 6.36, "gol": 2, "ass": 2}, "23_24": {"pv": 22, "mv": 5.89, "fm": 6.3, "gol": 3, "ass": 1}, "24_25": null}}, {"fascia": "B", "ruolo": "A", "nome": "Esposito F.P.", "club": "Inter", "pv": 31, "mv": 6.26, "fm": 7.02, "gol": 7, "ass": 3, "amm": 1, "esp": 0, "rig": "0/0", "fvm": 38, "qta": 22, "prezzo": 37, "note": "7G, Inter", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "B", "ruolo": "A", "nome": "Kean", "club": "Fiorentina", "pv": 22, "mv": 6.05, "fm": 6.55, "gol": 5, "ass": 3, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 37, "qta": 16, "prezzo": 39, "note": "5G+3A", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 25, "mv": 5.96, "fm": 6.56, "gol": 5, "ass": 2}, "22_23": {"pv": 23, "mv": 5.89, "fm": 6.52, "gol": 6, "ass": 0}, "23_24": {"pv": 14, "mv": 6.0, "fm": 5.93, "gol": 0, "ass": 0}, "24_25": {"pv": 32, "mv": 6.42, "fm": 8.08, "gol": 19, "ass": 2}}}, {"fascia": "B", "ruolo": "A", "nome": "Raspadori", "club": "Atalanta", "pv": 22, "mv": 6.05, "fm": 6.55, "gol": 4, "ass": 4, "amm": 1, "esp": 0, "rig": "0/0", "fvm": 37, "qta": 15, "prezzo": 25, "note": "4G+4A", "altezza": 168, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": {"pv": 36, "mv": 6.07, "fm": 6.89, "gol": 10, "ass": 4}, "22_23": {"pv": 23, "mv": 5.89, "fm": 6.22, "gol": 2, "ass": 2}, "23_24": {"pv": 33, "mv": 5.98, "fm": 6.44, "gol": 5, "ass": 3}, "24_25": {"pv": 18, "mv": 6.19, "fm": 7.22, "gol": 6, "ass": 1}}}, {"fascia": "C", "ruolo": "A", "nome": "Nkunku", "club": "Milan", "pv": 20, "mv": 6.1, "fm": 6.7, "gol": 5, "ass": 2, "amm": 1, "esp": 0, "rig": "0/0", "fvm": 43, "qta": 18, "prezzo": 29, "note": "5G+2A", "altezza": 180, "infortuni": "Infortuni al Chelsea", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "A", "nome": "Boga", "club": "Juventus", "pv": 13, "mv": 6.19, "fm": 7.15, "gol": 4, "ass": 1, "amm": 1, "esp": 0, "rig": "0/0", "fvm": 40, "qta": 11, "prezzo": 36, "note": "FM ottima", "altezza": 175, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": {"pv": 26, "mv": 5.92, "fm": 6.0, "gol": 0, "ass": 2}, "22_23": {"pv": 18, "mv": 6.25, "fm": 6.86, "gol": 2, "ass": 5}, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "A", "nome": "Colombo", "club": "Genoa", "pv": 24, "mv": 6.05, "fm": 6.5, "gol": 5, "ass": 3, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 34, "qta": 14, "prezzo": 29, "note": "5G+3A", "altezza": 192, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": {"pv": 26, "mv": 5.94, "fm": 6.37, "gol": 5, "ass": 1}, "23_24": {"pv": 23, "mv": 5.89, "fm": 6.39, "gol": 4, "ass": 1}, "24_25": {"pv": 36, "mv": 5.9, "fm": 6.39, "gol": 6, "ass": 2}}}, {"fascia": "C", "ruolo": "A", "nome": "Diao", "club": "Como", "pv": 20, "mv": 6.05, "fm": 6.48, "gol": 4, "ass": 3, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 33, "qta": 12, "prezzo": 30, "note": "4G+3A", "altezza": 183, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 14, "mv": 6.5, "fm": 7.93, "gol": 7, "ass": 0}}}, {"fascia": "C", "ruolo": "A", "nome": "Rodriguez Je.", "club": "Como", "pv": 24, "mv": 6.05, "fm": 6.5, "gol": 4, "ass": 4, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 30, "qta": 15, "prezzo": 29, "note": "4G+4A", "altezza": 173, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "A", "nome": "Vardy", "club": "Cremonese", "pv": 24, "mv": 6.0, "fm": 6.42, "gol": 5, "ass": 1, "amm": 3, "esp": 0, "rig": "1/1", "fvm": 29, "qta": 16, "prezzo": 31, "note": "Rigorista", "altezza": 179, "infortuni": "Età (39 anni)", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "A", "nome": "Castro S.", "club": "Bologna", "pv": 24, "mv": 6.0, "fm": 6.42, "gol": 4, "ass": 2, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 27, "qta": 17, "prezzo": 18, "note": "4G+2A", "altezza": 176, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 5, "mv": 6.0, "fm": 6.5, "gol": 1, "ass": 0}, "24_25": {"pv": 33, "mv": 6.17, "fm": 6.76, "gol": 8, "ass": 4}}}, {"fascia": "C", "ruolo": "A", "nome": "David", "club": "Juventus", "pv": 20, "mv": 6.0, "fm": 6.42, "gol": 5, "ass": 2, "amm": 1, "esp": 0, "rig": "0/0", "fvm": 25, "qta": 13, "prezzo": 24, "note": "Nuovo arrivo Juve", "altezza": 181, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "A", "nome": "Moreo", "club": "Pisa", "pv": 26, "mv": 6.0, "fm": 6.42, "gol": 6, "ass": 2, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 25, "qta": 16, "prezzo": 21, "note": "6G", "altezza": 181, "infortuni": "Nessun infortunio rilevante", "trend": "—", "storico": {"21_22": {"pv": 0, "mv": 0.0, "fm": 0.0, "gol": 0, "ass": 0}, "22_23": null, "23_24": null, "24_25": null}}, {"fascia": "C", "ruolo": "A", "nome": "Banda", "club": "Lecce", "pv": 22, "mv": 6.0, "fm": 6.4, "gol": 4, "ass": 3, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 25, "qta": 15, "prezzo": 23, "note": "Lecce", "altezza": 173, "infortuni": "Nessun infortunio rilevante", "trend": "📈", "storico": {"21_22": null, "22_23": {"pv": 32, "mv": 6.05, "fm": 6.17, "gol": 2, "ass": 1}, "23_24": {"pv": 21, "mv": 6.07, "fm": 6.33, "gol": 2, "ass": 3}, "24_25": {"pv": 13, "mv": 5.77, "fm": 5.81, "gol": 0, "ass": 1}}}, {"fascia": "C", "ruolo": "A", "nome": "Noslin", "club": "Lazio", "pv": 20, "mv": 5.98, "fm": 6.35, "gol": 4, "ass": 3, "amm": 2, "esp": 0, "rig": "0/0", "fvm": 24, "qta": 14, "prezzo": 25, "note": "Lazio", "altezza": 190, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": {"pv": 17, "mv": 6.35, "fm": 7.41, "gol": 5, "ass": 4}, "24_25": {"pv": 19, "mv": 6.0, "fm": 6.37, "gol": 2, "ass": 2}}}, {"fascia": "C", "ruolo": "A", "nome": "Adams C.", "club": "Torino", "pv": 24, "mv": 5.98, "fm": 6.28, "gol": 4, "ass": 2, "amm": 3, "esp": 0, "rig": "0/0", "fvm": 23, "qta": 16, "prezzo": 23, "note": "Torino", "altezza": 179, "infortuni": "Nessun infortunio rilevante", "trend": "📉", "storico": {"21_22": null, "22_23": null, "23_24": null, "24_25": {"pv": 35, "mv": 6.0, "fm": 6.76, "gol": 9, "ass": 4}}}]
+;
+
+// mercato state: { nomeLower: { status: 'ceduto'|'cambiato'|'confermato', nuovaSquadra, vecchiaSquadra } }
+let MERCATO = {};
+let mercatoAggiornato = false;
+
+const RORDER = ['P','D','C','A'];
+const FORDER = ['S','A','B','C'];
+const RLABEL = {P:'🧤 Portieri', D:'🛡️ Difensori', C:'⚙️ Centrocampisti', A:'⚽ Attaccanti'};
+const FLABEL = {S:'★ Fascia S — Imprescindibile', A:'★ Fascia A — Top Player', B:'★ Fascia B — Ottimo Titolare', C:'★ Fascia C — Buono / Low Cost'};
+const SERIE_A_ID = 2019; // football-data.org Serie A competition id
+
+let fRuolo='ALL', fFascia='ALL', fSearch='', fSort='default', fMercato='ALL';
+
+// ── MERCATO FETCH ──────────────────────────────────────────
+async function aggiornaMercato() {
+  const key = document.getElementById('apiKey').value.trim();
+  if (!key) {
+    setStatus('⚠️ Inserisci prima la tua API Key.', 'err');
+    return;
+  }
+
+  const btn = document.getElementById('btnAggiorna');
+  btn.disabled = true;
+  document.getElementById('btnIcon').innerHTML = '<span class="spinner"></span>';
+  setStatus('Connessione a football-data.org…', 'loading');
+
+  try {
+    // Step 1: scarica tutte le rose delle squadre Serie A
+    const resp = await fetch(
+      `https://api.football-data.org/v4/competitions/${SERIE_A_ID}/teams?season=2025`,
+      { headers: { 'X-Auth-Token': key } }
+    );
+
+    if (resp.status === 401) { setStatus('❌ API Key non valida. Controlla su football-data.org.', 'err'); return; }
+    if (resp.status === 429) { setStatus('⏳ Troppe richieste. Attendi un minuto e riprova.', 'err'); return; }
+    if (!resp.ok) { setStatus(`❌ Errore API: ${resp.status}`, 'err'); return; }
+
+    const teamsData = await resp.json();
+    setStatus(`Analisi ${teamsData.teams?.length || 0} squadre Serie A…`, 'loading');
+
+    // Step 2: costruisci mappa nome_giocatore → squadra_attuale
+    const playerTeamMap = {}; // nomeLower → nomeSquadraNostra
+    let fetchedTeams = 0;
+
+    for (const team of (teamsData.teams || [])) {
+      const ourName = TEAM_MAP[team.name] || team.shortName || team.name;
+      try {
+        const tResp = await fetch(
+          `https://api.football-data.org/v4/teams/${team.id}`,
+          { headers: { 'X-Auth-Token': key } }
+        );
+        if (!tResp.ok) continue;
+        const tData = await tResp.json();
+        for (const p of (tData.squad || [])) {
+          playerTeamMap[p.name.toLowerCase()] = ourName;
+          // prova anche solo cognome
+          const parts = p.name.split(' ');
+          if (parts.length > 1) {
+            playerTeamMap[parts[parts.length-1].toLowerCase()] = ourName;
+          }
+        }
+        fetchedTeams++;
+        setStatus(`Analisi rose… ${fetchedTeams}/${teamsData.teams.length} squadre`, 'loading');
+        // rispetta rate limit: 10 req/min free tier → 6s tra richieste
+        await new Promise(r => setTimeout(r, 6200));
+      } catch(e) { continue; }
+    }
+
+    // Step 3: incrocia con la nostra lista
+    let ceduti=0, cambiati=0, confermati=0;
+    MERCATO = {};
+
+    for (const p of DATA) {
+      const nk = p.nome.toLowerCase();
+      const parts = p.nome.toLowerCase().split(' ');
+      const cognome = parts[parts.length-1];
+
+      const squadraAttuale = playerTeamMap[nk] || playerTeamMap[cognome] || null;
+
+      if (!squadraAttuale) {
+        // non trovato → potrebbe essere ceduto o nome diverso
+        MERCATO[nk] = { status: 'ceduto', nuovaSquadra: '?', vecchiaSquadra: p.club };
+        ceduti++;
+      } else if (squadraAttuale !== p.club) {
+        MERCATO[nk] = { status: 'cambiato', nuovaSquadra: squadraAttuale, vecchiaSquadra: p.club };
+        cambiati++;
+      } else {
+        MERCATO[nk] = { status: 'confermato', nuovaSquadra: squadraAttuale, vecchiaSquadra: p.club };
+        confermati++;
+      }
+    }
+
+    mercatoAggiornato = true;
+    document.getElementById('filterMercatoRow').style.display = 'flex';
+    document.getElementById('mercatoLegend').style.display = 'flex';
+    setStatus(`✅ Aggiornato! ${cambiati} cambi squadra · ${ceduti} possibili cessioni · ${confermati} confermati`, 'ok');
+    render();
+
+  } catch(e) {
+    setStatus(`❌ Errore: ${e.message}. Controlla la connessione.`, 'err');
+  } finally {
+    btn.disabled = false;
+    document.getElementById('btnIcon').textContent = '🔄';
+  }
+}
+
+function setStatus(msg, cls) {
+  const el = document.getElementById('mercatoStatus');
+  el.textContent = '';
+  el.className = 'mercato-status ' + (cls||'');
+  if (cls === 'loading') {
+    const sp = document.createElement('span');
+    sp.className = 'spinner';
+    el.appendChild(sp);
+  }
+  el.appendChild(document.createTextNode(' ' + msg));
+}
+
+// ── RENDER ────────────────────────────────────────────────
+function fmCls(v){ if(!v) return 'n'; if(v>=7) return 'g'; if(v>=6) return 'm'; return 'l'; }
+
+function scHTML(s){
+  if(!s) return '<div class="sc"><span class="sc-fm n">—</span></div>';
+  const ga=(s.gol>0||s.ass>0)?`<span class="sc-ga">${s.gol>0?s.gol+'G':''}${s.ass>0?s.ass+'A':''}</span>`:'';
+  return `<div class="sc"><span class="sc-fm ${fmCls(s.fm)}">${s.fm??'—'}</span><span class="sc-pv">Pv:${s.pv}</span>${ga}</div>`;
+}
+
+function injCls(t){
+  if(!t) return 'inj-ok';
+  if(t.includes('⚠️')||t.includes('cronici')||t.includes('cronica')) return 'inj-bad';
+  if(t.includes('LCA')||t.includes('Storico')||t.includes('frequenti')||t.includes('Gestione')) return 'inj-warn';
+  return 'inj-ok';
+}
+
+function mercatoHTML(p) {
+  if (!mercatoAggiornato) return '<span style="color:#333;font-size:11px">—</span>';
+  const m = MERCATO[p.nome.toLowerCase()];
+  if (!m) return '<span style="color:#333;font-size:11px">—</span>';
+  if (m.status === 'ceduto')
+    return `<div class="row-mercato"><span class="merc-badge ceduto">CEDUTO</span><span class="club-old">${m.vecchiaSquadra}</span></div>`;
+  if (m.status === 'cambiato')
+    return `<div class="row-mercato"><span class="merc-badge cambiato">→ ${m.nuovaSquadra}</span><span class="club-old">${m.vecchiaSquadra}</span></div>`;
+  return `<span class="merc-badge confermato">✓</span>`;
+}
+
+function getData(){
+  return DATA.filter(p=>{
+    if(fRuolo!=='ALL' && p.ruolo!==fRuolo) return false;
+    if(fFascia!=='ALL' && p.fascia!==fFascia) return false;
+    if(fSearch){ const q=fSearch.toLowerCase(); if(!p.nome.toLowerCase().includes(q)&&!p.club.toLowerCase().includes(q)) return false; }
+    if(fMercato!=='ALL' && mercatoAggiornato){
+      const m=MERCATO[p.nome.toLowerCase()];
+      if(!m||m.status!==fMercato) return false;
+    }
+    return true;
+  }).sort((a,b)=>{
+    if(fSort==='default'){
+      const r=RORDER.indexOf(a.ruolo)-RORDER.indexOf(b.ruolo);
+      return r||FORDER.indexOf(a.fascia)-FORDER.indexOf(b.fascia);
+    }
+    return (b[fSort]||0)-(a[fSort]||0);
+  });
+}
+
+function theadHTML(){
+  const merc = mercatoAggiornato ? '<th style="min-width:90px">Mercato</th>' : '';
+  return `<thead><tr>
+    <th class="sticky">Fascia · Ruolo · Giocatore</th>
+    <th>Club</th><th>Alt.</th><th>Pres.</th><th>MV</th><th>FM</th>
+    <th>Gol</th><th>Ass</th><th>Amm</th><th>Rig</th>
+    <th>FVM</th><th>Qt.A</th><th style="min-width:72px">Prezzo</th>
+    <th style="min-width:52px">21/22</th><th style="min-width:52px">22/23</th>
+    <th style="min-width:52px">23/24</th><th style="min-width:52px">24/25</th>
+    <th>Trend</th>${merc}
+    <th style="min-width:160px;text-align:left">Infortuni</th>
+    <th style="min-width:160px;text-align:left">Note</th>
+  </tr></thead>`;
+}
+
+function rowHTML(p){
+  const ic=injCls(p.infortuni);
+  const merc = mercatoAggiornato ? `<td>${mercatoHTML(p)}</td>` : '';
+  // evidenzia riga se ceduto/cambiato
+  const mk = MERCATO[p.nome.toLowerCase()];
+  const rowStyle = mk&&mk.status==='ceduto' ? 'opacity:.5' : mk&&mk.status==='cambiato' ? 'background:#1a1500' : '';
+  return `<tr style="${rowStyle}">
+    <td class="sticky"><div class="name-cell">
+      <span class="fb-badge ${p.fascia}">${p.fascia}</span>
+      <span class="rb-badge ${p.ruolo}">${p.ruolo}</span>
+      <span title="${p.nome}">${p.nome}</span>
+    </div></td>
+    <td style="color:var(--muted);font-size:11px">${p.club}</td>
+    <td>${p.altezza}</td><td>${p.pv}</td><td>${p.mv}</td>
+    <td><strong>${p.fm}</strong></td>
+    <td>${p.gol>0?'<strong>'+p.gol+'</strong>':p.gol}</td>
+    <td>${p.ass>0?'<strong>'+p.ass+'</strong>':p.ass}</td>
+    <td>${p.amm}</td><td style="font-size:11px">${p.rig}</td>
+    <td><strong>${p.fvm}</strong></td><td>${p.qta}</td>
+    <td><span class="pr-badge ${p.fascia}">${p.prezzo} cr</span></td>
+    <td>${scHTML(p.storico['21_22'])}</td><td>${scHTML(p.storico['22_23'])}</td>
+    <td>${scHTML(p.storico['23_24'])}</td><td>${scHTML(p.storico['24_25'])}</td>
+    <td style="font-size:15px;text-align:center">${p.trend}</td>
+    ${merc}
+    <td class="${ic}" style="text-align:left;font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${p.infortuni}">${p.infortuni}</td>
+    <td style="text-align:left;font-size:11px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${p.note}">${p.note}</td>
+  </tr>`;
+}
+
+function render(){
+  const data=getData();
+  const n=data.length;
+  document.getElementById('cnt').textContent=n;
+  document.getElementById('cnt2').textContent=n+' trovati';
+  const app=document.getElementById('app');
+  if(!n){app.innerHTML='<div class="empty">Nessun giocatore trovato.</div>';return;}
+  let html='';
+  if(fSort==='default'){
+    for(const ruolo of RORDER){
+      const byR=data.filter(p=>p.ruolo===ruolo);
+      if(!byR.length) continue;
+      html+=`<div class="sec-hdr"><span class="sec-title">${RLABEL[ruolo]}</span><span class="sec-count">${byR.length}</span></div>`;
+      for(const fascia of FORDER){
+        const byF=byR.filter(p=>p.fascia===fascia);
+        if(!byF.length) continue;
+        html+=`<div class="fas-hdr ${fascia}">${FLABEL[fascia]}</div>`;
+        html+=`<div class="tbl-outer"><table>${theadHTML()}<tbody>${byF.map(rowHTML).join('')}</tbody></table></div>`;
+      }
+    }
+  } else {
+    html+=`<div class="tbl-outer"><table>${theadHTML()}<tbody>${data.map(rowHTML).join('')}</tbody></table></div>`;
+  }
+  app.innerHTML=html;
+}
+
+// ── EVENTS ────────────────────────────────────────────────
+document.querySelectorAll('[data-f]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const t=b.dataset.f;
+    document.querySelectorAll(`[data-f="${t}"]`).forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    if(t==='ruolo') fRuolo=b.dataset.v;
+    if(t==='fascia') fFascia=b.dataset.v;
+    if(t==='mercato') fMercato=b.dataset.v;
+    render();
+  });
+});
+document.querySelectorAll('[data-s]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-s]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    fSort=b.dataset.s;
+    render();
+  });
+});
+document.getElementById('search').addEventListener('input',e=>{fSearch=e.target.value.trim();render();});
+
+// Salva chiave in localStorage per comodità
+document.getElementById('apiKey').addEventListener('change',e=>{
+  try{localStorage.setItem('fanta_api_key',e.target.value);}catch(x){}
+});
+try{
+  const saved=localStorage.getItem('fanta_api_key');
+  if(saved) document.getElementById('apiKey').value=saved;
+}catch(x){}
+
+render();
+</script>
+</body>
+</html>
