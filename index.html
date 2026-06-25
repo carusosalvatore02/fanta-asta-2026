@@ -268,10 +268,7 @@ let fRuolo='ALL', fFascia='ALL', fSearch='', fSort='default', fMercato='ALL';
 // ── MERCATO FETCH ──────────────────────────────────────────
 async function aggiornaMercato() {
   const key = document.getElementById('apiKey').value.trim();
-  if (!key) {
-    setStatus('⚠️ Inserisci prima la tua API Key.', 'err');
-    return;
-  }
+  if (!key) { setStatus('⚠️ Inserisci prima la tua API Key.', 'err'); return; }
 
   const btn = document.getElementById('btnAggiorna');
   btn.disabled = true;
@@ -279,62 +276,86 @@ async function aggiornaMercato() {
   setStatus('Connessione a football-data.org…', 'loading');
 
   try {
-    // Step 1: scarica tutte le rose delle squadre Serie A
+    // Usa i marcatori Serie A (gratuito) per ottenere nome completo + squadra attuale
+    setStatus('Scarico marcatori Serie A 2025-26…', 'loading');
+    
     const resp = await fetch(
-      `https://corsproxy.io/?url=${encodeURIComponent("https://api.football-data.org/v4/competitions/" + SERIE_A_ID + "/teams?season=2025")}`,
+      `https://corsproxy.io/?url=${encodeURIComponent('https://api.football-data.org/v4/competitions/SA/scorers?season=2025&limit=100')}`,
       { headers: { 'X-Auth-Token': key } }
     );
-
-    if (resp.status === 401) { setStatus('❌ API Key non valida. Controlla su football-data.org.', 'err'); return; }
-    if (resp.status === 429) { setStatus('⏳ Troppe richieste. Attendi un minuto e riprova.', 'err'); return; }
+    if (resp.status === 401) { setStatus('❌ API Key non valida.', 'err'); return; }
+    if (resp.status === 429) { setStatus('⏳ Troppe richieste. Attendi un minuto.', 'err'); return; }
     if (!resp.ok) { setStatus(`❌ Errore API: ${resp.status}`, 'err'); return; }
 
-    const teamsData = await resp.json();
-    setStatus(`Analisi ${teamsData.teams?.length || 0} squadre Serie A…`, 'loading');
+    const scorersData = await resp.json();
+    setStatus('Scarico standings per dati squadre…', 'loading');
 
-    // Step 2: costruisci mappa nome_giocatore → squadra_attuale
-    const playerTeamMap = {}; // nomeLower → nomeSquadraNostra
-    let fetchedTeams = 0;
+    // Seconda chiamata: standings per avere tutte le squadre
+    const standResp = await fetch(
+      `https://corsproxy.io/?url=${encodeURIComponent('https://api.football-data.org/v4/competitions/SA/standings?season=2025')}`,
+      { headers: { 'X-Auth-Token': key } }
+    );
+    const standData = await standResp.json();
 
-    for (const team of (teamsData.teams || [])) {
-      const ourName = TEAM_MAP[team.name] || team.shortName || team.name;
-      try {
-        const tResp = await fetch(
-          `https://corsproxy.io/?url=${encodeURIComponent("https://api.football-data.org/v4/teams/" + team.id)}`,
-          { headers: { 'X-Auth-Token': key } }
-        );
-        if (!tResp.ok) continue;
-        const tData = await tResp.json();
-        for (const p of (tData.squad || [])) {
-          playerTeamMap[p.name.toLowerCase()] = ourName;
-          // prova anche solo cognome
-          const parts = p.name.split(' ');
-          if (parts.length > 1) {
-            playerTeamMap[parts[parts.length-1].toLowerCase()] = ourName;
-          }
-        }
-        fetchedTeams++;
-        setStatus(`Analisi rose… ${fetchedTeams}/${teamsData.teams.length} squadre`, 'loading');
-        // rispetta rate limit: 10 req/min free tier → 6s tra richieste
-        await new Promise(r => setTimeout(r, 6200));
-      } catch(e) { continue; }
+    // Costruisce mappa: {cognome/parteNome → {nomeCompleto, squadraNostra}}
+    const playerMap = {}; // chiave: varianti del nome → squadra nostra
+
+    const addPlayer = (fullName, teamApiName) => {
+      const ourTeam = TEAM_MAP[teamApiName] || teamApiName;
+      const parts = fullName.split(' ');
+      const cognome = parts[parts.length - 1].toLowerCase();
+      const primoNome = parts[0].toLowerCase();
+      // Aggiungi varie chiavi di ricerca
+      playerMap[fullName.toLowerCase()] = ourTeam;
+      playerMap[cognome] = ourTeam;
+      playerMap[primoNome + ' ' + cognome] = ourTeam;
+      // Senza accenti
+      const noAccent = fullName.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      playerMap[noAccent] = ourTeam;
+      playerMap[noAccent.split(' ').pop()] = ourTeam;
+    };
+
+    // Aggiungi tutti i marcatori
+    for (const s of (scorersData.scorers || [])) {
+      if (s.player?.name && s.team?.name) {
+        addPlayer(s.player.name, s.team.name);
+      }
     }
 
-    // Step 3: incrocia con la nostra lista
-    let ceduti=0, cambiati=0, confermati=0;
+    setStatus('Incrocio dati con la lista…', 'loading');
+
+    // Funzione di matching: confronta nome della nostra lista col playerMap
+    const findTeam = (nome) => {
+      const nomeLow = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      // Prova match esatto
+      if (playerMap[nomeLow]) return playerMap[nomeLow];
+      // Prova solo cognome (ultima parola)
+      const parts = nomeLow.split(' ');
+      const cognome = parts[parts.length - 1].replace(/[^a-z]/g, '');
+      if (playerMap[cognome]) return playerMap[cognome];
+      // Prova rimuovendo puntini (es "Martinez L." → "martinez l")
+      const clean = nomeLow.replace(/[^a-z ]/g, '').trim();
+      if (playerMap[clean]) return playerMap[clean];
+      // Prova con solo la prima parte del cognome composito
+      for (const [k, v] of Object.entries(playerMap)) {
+        if (k.includes(cognome) || cognome.includes(k)) return v;
+      }
+      return null;
+    };
+
+    let cambiati = 0, confermati = 0, nonTrovati = 0;
     MERCATO = {};
 
     for (const p of DATA) {
       const nk = p.nome.toLowerCase();
-      const parts = p.nome.toLowerCase().split(' ');
-      const cognome = parts[parts.length-1];
-
-      const squadraAttuale = playerTeamMap[nk] || playerTeamMap[cognome] || null;
-
+      const squadraAttuale = findTeam(p.nome);
+      
       if (!squadraAttuale) {
-        // non trovato → potrebbe essere ceduto o nome diverso
-        MERCATO[nk] = { status: 'ceduto', nuovaSquadra: '?', vecchiaSquadra: p.club };
-        ceduti++;
+        // Non nei marcatori — potrebbe essere un portiere/difensore
+        // Lo segniamo come "non verificabile" invece di ceduto
+        MERCATO[nk] = { status: 'nv', nuovaSquadra: '?', vecchiaSquadra: p.club };
+        nonTrovati++;
       } else if (squadraAttuale !== p.club) {
         MERCATO[nk] = { status: 'cambiato', nuovaSquadra: squadraAttuale, vecchiaSquadra: p.club };
         cambiati++;
@@ -347,7 +368,7 @@ async function aggiornaMercato() {
     mercatoAggiornato = true;
     document.getElementById('filterMercatoRow').style.display = 'flex';
     document.getElementById('mercatoLegend').style.display = 'flex';
-    setStatus(`✅ Aggiornato! ${cambiati} cambi squadra · ${ceduti} possibili cessioni · ${confermati} confermati`, 'ok');
+    setStatus(`✅ Aggiornato! ${cambiati} cambi squadra confermati · ${confermati} confermati · ${nonTrovati} non nei marcatori (portieri/difensori)`, 'ok');
     render();
 
   } catch(e) {
@@ -390,6 +411,8 @@ function mercatoHTML(p) {
   if (!mercatoAggiornato) return '<span style="color:#333;font-size:11px">—</span>';
   const m = MERCATO[p.nome.toLowerCase()];
   if (!m) return '<span style="color:#333;font-size:11px">—</span>';
+  if (m.status === 'nv')
+    return `<span style="color:#555;font-size:10px">non nei marcatori</span>`;
   if (m.status === 'ceduto')
     return `<div class="row-mercato"><span class="merc-badge ceduto">CEDUTO</span><span class="club-old">${m.vecchiaSquadra}</span></div>`;
   if (m.status === 'cambiato')
