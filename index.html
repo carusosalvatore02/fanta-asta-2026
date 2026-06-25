@@ -153,15 +153,15 @@ tbody tr:hover td.sticky{background:#1e2445;}
 
 <!-- MERCATO PANEL -->
 <div class="mercato-panel">
-  <div class="mercato-title">🔄 Aggiornamento Calciomercato — football-data.org</div>
+  <div class="mercato-title">🔄 Aggiornamento Calciomercato — Transfermarkt (gratuito, nessuna chiave richiesta)</div>
   <div class="mercato-row">
-    <input class="api-input" type="password" id="apiKey" placeholder="Incolla qui la tua API Key (football-data.org)…" autocomplete="off">
+    <input class="api-input" type="password" id="apiKey" placeholder="Non necessaria — usa Transfermarkt (gratuito)" autocomplete="off" style="display:none">
     <button class="btn-aggiorna" id="btnAggiorna" onclick="aggiornaMercato()">
       <span id="btnIcon">🔄</span> Aggiorna Mercato
     </button>
   </div>
-  <div class="mercato-status" id="mercatoStatus">Inserisci la tua chiave API e clicca Aggiorna per verificare trasferimenti e nuove squadre.</div>
-  <div class="privacy-note">🔒 La chiave rimane solo sul tuo browser. Non viene inviata a nessun server esterno.</div>
+  <div class="mercato-status" id="mercatoStatus">Clicca Aggiorna per verificare rose e trasferimenti in tempo reale da Transfermarkt. Richiede circa 2 minuti.</div>
+  <div class="privacy-note">✅ Nessuna chiave API richiesta. Dati da Transfermarkt via wrapper open source.</div>
   <div class="mercato-legend" id="mercatoLegend" style="display:none">
     <span class="merc-badge ceduto">CEDUTO</span> Giocatore non più in Serie A
     <span class="merc-badge cambiato">CAMBIATO</span> Cambiato squadra in Serie A
@@ -267,100 +267,135 @@ let fRuolo='ALL', fFascia='ALL', fSearch='', fSort='default', fMercato='ALL';
 
 // ── MERCATO FETCH ──────────────────────────────────────────
 async function aggiornaMercato() {
-  const key = document.getElementById('apiKey').value.trim();
-  if (!key) { setStatus('⚠️ Inserisci prima la tua API Key.', 'err'); return; }
-
   const btn = document.getElementById('btnAggiorna');
   btn.disabled = true;
   document.getElementById('btnIcon').innerHTML = '<span class="spinner"></span>';
-  setStatus('Connessione a football-data.org…', 'loading');
+
+  // Rimuovi il campo chiave API — non serve più con Transfermarkt
+  const apiKeyInput = document.getElementById('apiKey');
+  if (apiKeyInput) {
+    apiKeyInput.style.display = 'none';
+    apiKeyInput.previousElementSibling && (apiKeyInput.previousElementSibling.style.display = 'none');
+  }
+
+  const BASE = 'https://transfermarkt-api.fly.dev';
+  const PROXY = 'https://corsproxy.io/?url=';
+
+  const fetchTM = async (path) => {
+    const r = await fetch(PROXY + encodeURIComponent(BASE + path));
+    if (!r.ok) throw new Error(`HTTP ${r.status} su ${path}`);
+    return r.json();
+  };
 
   try {
-    // Usa i marcatori Serie A (gratuito) per ottenere nome completo + squadra attuale
-    setStatus('Scarico marcatori Serie A 2025-26…', 'loading');
-    
-    const resp = await fetch(
-      `https://corsproxy.io/?url=${encodeURIComponent('https://api.football-data.org/v4/competitions/SA/scorers?season=2025&limit=100')}`,
-      { headers: { 'X-Auth-Token': key } }
-    );
-    if (resp.status === 401) { setStatus('❌ API Key non valida.', 'err'); return; }
-    if (resp.status === 429) { setStatus('⏳ Troppe richieste. Attendi un minuto.', 'err'); return; }
-    if (!resp.ok) { setStatus(`❌ Errore API: ${resp.status}`, 'err'); return; }
+    setStatus('Scarico squadre Serie A da Transfermarkt…', 'loading');
 
-    const scorersData = await resp.json();
-    setStatus('Scarico standings per dati squadre…', 'loading');
+    // Step 1: lista club Serie A stagione 2025
+    const clubsData = await fetchTM('/competitions/IT1/clubs?season_id=2025');
+    const clubs = clubsData.clubs || [];
+    if (!clubs.length) throw new Error('Nessun club trovato');
 
-    // Seconda chiamata: standings per avere tutte le squadre
-    const standResp = await fetch(
-      `https://corsproxy.io/?url=${encodeURIComponent('https://api.football-data.org/v4/competitions/SA/standings?season=2025')}`,
-      { headers: { 'X-Auth-Token': key } }
-    );
-    const standData = await standResp.json();
+    setStatus(`${clubs.length} squadre trovate. Scarico rose...`, 'loading');
 
-    // Costruisce mappa: {cognome/parteNome → {nomeCompleto, squadraNostra}}
-    const playerMap = {}; // chiave: varianti del nome → squadra nostra
-
-    const addPlayer = (fullName, teamApiName) => {
-      const ourTeam = TEAM_MAP[teamApiName] || teamApiName;
-      const parts = fullName.split(' ');
-      const cognome = parts[parts.length - 1].toLowerCase();
-      const primoNome = parts[0].toLowerCase();
-      // Aggiungi varie chiavi di ricerca
-      playerMap[fullName.toLowerCase()] = ourTeam;
-      playerMap[cognome] = ourTeam;
-      playerMap[primoNome + ' ' + cognome] = ourTeam;
-      // Senza accenti
-      const noAccent = fullName.toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      playerMap[noAccent] = ourTeam;
-      playerMap[noAccent.split(' ').pop()] = ourTeam;
+    // Mappa TM club name → nome nella nostra lista
+    const TM_CLUB_MAP = {
+      'Inter Milan':      'Inter',
+      'Juventus FC':      'Juventus',
+      'AS Roma':          'Roma',
+      'AC Milan':         'Milan',
+      'Atalanta BC':      'Atalanta',
+      'SSC Napoli':       'Napoli',
+      'SS Lazio':         'Lazio',
+      'ACF Fiorentina':   'Fiorentina',
+      'Bologna FC':       'Bologna',
+      'Torino FC':        'Torino',
+      'Genoa CFC':        'Genoa',
+      'Udinese Calcio':   'Udinese',
+      'Cagliari Calcio':  'Cagliari',
+      'US Lecce':         'Lecce',
+      'Parma Calcio 1913':'Parma',
+      'Como 1907':        'Como',
+      'US Sassuolo':      'Sassuolo',
+      'US Cremonese':     'Cremonese',
+      'Pisa SC':          'Pisa',
+      'Hellas Verona':    'Verona',
+      'Venezia FC':       'Venezia',
+      'AC Monza':         'Monza',
+      'Empoli FC':        'Empoli',
+      'Frosinone Calcio': 'Frosinone',
     };
 
-    // Aggiungi tutti i marcatori
-    for (const s of (scorersData.scorers || [])) {
-      if (s.player?.name && s.team?.name) {
-        addPlayer(s.player.name, s.team.name);
+    // Step 2: scarica rosa di ogni squadra con delay per evitare rate limit
+    // playerMap: { nomeNormalizzato → nomeClubNostro }
+    const playerMap = {};
+    let done = 0;
+
+    for (const club of clubs) {
+      try {
+        const ourClub = TM_CLUB_MAP[club.name] || club.name;
+        const squadData = await fetchTM(`/clubs/${club.id}/players?season_id=2025`);
+        const players = squadData.players || [];
+
+        for (const p of players) {
+          const name = p.name || '';
+          // Aggiungi varianti del nome per il matching
+          const variants = [
+            name.toLowerCase(),
+            name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),
+            name.split(' ').pop().toLowerCase(),
+            name.split(' ').pop().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),
+          ];
+          for (const v of variants) {
+            if (v && v.length > 1) playerMap[v] = { ourClub, fullName: name };
+          }
+        }
+
+        done++;
+        setStatus(`Rosa scaricata: ${ourClub} (${done}/${clubs.length})…`, 'loading');
+
+        // Delay 300ms per rispettare il rate limit
+        await new Promise(r => setTimeout(r, 300));
+
+      } catch (e) {
+        done++;
+        console.warn('Errore club', club.name, e.message);
       }
     }
 
-    setStatus('Incrocio dati con la lista…', 'loading');
+    setStatus(`Rose scaricate. Incrocio con la lista (${Object.keys(playerMap).length} giocatori TM)…`, 'loading');
 
-    // Funzione di matching: confronta nome della nostra lista col playerMap
-    const findTeam = (nome) => {
-      const nomeLow = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      // Prova match esatto
-      if (playerMap[nomeLow]) return playerMap[nomeLow];
-      // Prova solo cognome (ultima parola)
-      const parts = nomeLow.split(' ');
-      const cognome = parts[parts.length - 1].replace(/[^a-z]/g, '');
-      if (playerMap[cognome]) return playerMap[cognome];
-      // Prova rimuovendo puntini (es "Martinez L." → "martinez l")
-      const clean = nomeLow.replace(/[^a-z ]/g, '').trim();
-      if (playerMap[clean]) return playerMap[clean];
-      // Prova con solo la prima parte del cognome composito
-      for (const [k, v] of Object.entries(playerMap)) {
-        if (k.includes(cognome) || cognome.includes(k)) return v;
+    // Step 3: matching con la nostra lista
+    const matchPlayer = (nome) => {
+      const variants = [
+        nome.toLowerCase(),
+        nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),
+        // Solo cognome (es "Martinez L." → "martinez")
+        nome.toLowerCase().replace(/[^a-zàèéìòù ]/g,'').trim().split(' ').filter(w=>w.length>1).pop(),
+        nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').trim().split(' ').filter(w=>w.length>1).pop(),
+        // Primo token significativo
+        nome.toLowerCase().replace(/[^a-zàèéìòù ]/g,'').trim().split(' ')[0],
+      ];
+      for (const v of variants) {
+        if (v && playerMap[v]) return playerMap[v];
       }
       return null;
     };
 
-    let cambiati = 0, confermati = 0, nonTrovati = 0;
+    let cambiati = 0, confermati = 0, nonVerif = 0;
     MERCATO = {};
 
     for (const p of DATA) {
       const nk = p.nome.toLowerCase();
-      const squadraAttuale = findTeam(p.nome);
-      
-      if (!squadraAttuale) {
-        // Non nei marcatori — potrebbe essere un portiere/difensore
-        // Lo segniamo come "non verificabile" invece di ceduto
-        MERCATO[nk] = { status: 'nv', nuovaSquadra: '?', vecchiaSquadra: p.club };
-        nonTrovati++;
-      } else if (squadraAttuale !== p.club) {
-        MERCATO[nk] = { status: 'cambiato', nuovaSquadra: squadraAttuale, vecchiaSquadra: p.club };
+      const found = matchPlayer(p.nome);
+
+      if (!found) {
+        MERCATO[nk] = { status: 'nv', nuovaSquadra: null, vecchiaSquadra: p.club };
+        nonVerif++;
+      } else if (found.ourClub !== p.club) {
+        MERCATO[nk] = { status: 'cambiato', nuovaSquadra: found.ourClub, vecchiaSquadra: p.club, fullName: found.fullName };
         cambiati++;
       } else {
-        MERCATO[nk] = { status: 'confermato', nuovaSquadra: squadraAttuale, vecchiaSquadra: p.club };
+        MERCATO[nk] = { status: 'confermato', nuovaSquadra: found.ourClub, vecchiaSquadra: p.club };
         confermati++;
       }
     }
@@ -368,7 +403,7 @@ async function aggiornaMercato() {
     mercatoAggiornato = true;
     document.getElementById('filterMercatoRow').style.display = 'flex';
     document.getElementById('mercatoLegend').style.display = 'flex';
-    setStatus(`✅ Aggiornato! ${cambiati} cambi squadra confermati · ${confermati} confermati · ${nonTrovati} non nei marcatori (portieri/difensori)`, 'ok');
+    setStatus(`✅ Transfermarkt aggiornato! ${cambiati} cambi squadra · ${confermati} confermati · ${nonVerif} non trovati`, 'ok');
     render();
 
   } catch(e) {
