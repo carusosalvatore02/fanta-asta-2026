@@ -281,7 +281,7 @@ async function aggiornaMercato() {
   try {
     // Step 1: scarica tutte le rose delle squadre Serie A
     const resp = await fetch(
-      `https://api.football-data.org/v4/competitions/${SERIE_A_ID}/teams?season=2025`,
+      `https://corsproxy.io/?url=${encodeURIComponent("https://api.football-data.org/v4/competitions/" + SERIE_A_ID + "/teams?season=2025")}`,
       { headers: { 'X-Auth-Token': key } }
     );
 
@@ -300,7 +300,7 @@ async function aggiornaMercato() {
       const ourName = TEAM_MAP[team.name] || team.shortName || team.name;
       try {
         const tResp = await fetch(
-          `https://api.football-data.org/v4/teams/${team.id}`,
+          `https://corsproxy.io/?url=${encodeURIComponent("https://api.football-data.org/v4/teams/" + team.id)}`,
           { headers: { 'X-Auth-Token': key } }
         );
         if (!tResp.ok) continue;
