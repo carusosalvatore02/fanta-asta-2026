@@ -271,113 +271,106 @@ async function aggiornaMercato() {
   btn.disabled = true;
   document.getElementById('btnIcon').innerHTML = '<span class="spinner"></span>';
 
-  // Rimuovi il campo chiave API — non serve più con Transfermarkt
-  const apiKeyInput = document.getElementById('apiKey');
-  if (apiKeyInput) {
-    apiKeyInput.style.display = 'none';
-    apiKeyInput.previousElementSibling && (apiKeyInput.previousElementSibling.style.display = 'none');
-  }
-
-  const BASE = 'https://transfermarkt-api.fly.dev';
+  const BASE  = 'https://transfermarkt-api.fly.dev';
   const PROXY = 'https://corsproxy.io/?url=';
+  const SEASON = '2025'; // 2025 = stagione 2025-26 su Transfermarkt
 
   const fetchTM = async (path) => {
     const r = await fetch(PROXY + encodeURIComponent(BASE + path));
-    if (!r.ok) throw new Error(`HTTP ${r.status} su ${path}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();
   };
 
+  // Mappa TM club name → nome nella nostra lista
+  const TM_CLUB_MAP = {
+    'Inter Milan':'Inter','Juventus FC':'Juventus','AS Roma':'Roma',
+    'AC Milan':'Milan','Atalanta BC':'Atalanta','SSC Napoli':'Napoli',
+    'SS Lazio':'Lazio','ACF Fiorentina':'Fiorentina','Bologna FC 1909':'Bologna',
+    'Torino FC':'Torino','Genoa CFC':'Genoa','Udinese Calcio':'Udinese',
+    'Cagliari Calcio':'Cagliari','US Lecce':'Lecce','Parma Calcio 1913':'Parma',
+    'Como 1907':'Como','US Sassuolo':'Sassuolo','US Cremonese':'Cremonese',
+    'Pisa Sporting Club':'Pisa','Hellas Verona':'Verona',
+    'Venezia FC':'Venezia','Frosinone Calcio':'Frosinone','AC Monza':'Monza',
+  };
+
+  // Normalizza stringa: minuscolo, rimuovi accenti e caratteri speciali
+  const norm = s => (s||'').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+
   try {
     setStatus('Scarico squadre Serie A da Transfermarkt…', 'loading');
-
-    // Step 1: lista club Serie A stagione 2025
-    const clubsData = await fetchTM('/competitions/IT1/clubs?season_id=2025');
+    const clubsData = await fetchTM(`/competitions/IT1/clubs?season_id=${SEASON}`);
     const clubs = clubsData.clubs || [];
     if (!clubs.length) throw new Error('Nessun club trovato');
 
-    setStatus(`${clubs.length} squadre trovate. Scarico rose...`, 'loading');
+    // playerDB: mappa → { ourClub, fullName, normFull, normCognome, normPrimo }
+    // Chiave: normFull e normCognome → può avere conflitti → teniamo array
+    const byFull    = {}; // normFull → entry
+    const byCognome = {}; // normCognome → array di entry (per gestire omonimi)
 
-    // Mappa TM club name → nome nella nostra lista
-    const TM_CLUB_MAP = {
-      'Inter Milan':      'Inter',
-      'Juventus FC':      'Juventus',
-      'AS Roma':          'Roma',
-      'AC Milan':         'Milan',
-      'Atalanta BC':      'Atalanta',
-      'SSC Napoli':       'Napoli',
-      'SS Lazio':         'Lazio',
-      'ACF Fiorentina':   'Fiorentina',
-      'Bologna FC':       'Bologna',
-      'Torino FC':        'Torino',
-      'Genoa CFC':        'Genoa',
-      'Udinese Calcio':   'Udinese',
-      'Cagliari Calcio':  'Cagliari',
-      'US Lecce':         'Lecce',
-      'Parma Calcio 1913':'Parma',
-      'Como 1907':        'Como',
-      'US Sassuolo':      'Sassuolo',
-      'US Cremonese':     'Cremonese',
-      'Pisa SC':          'Pisa',
-      'Hellas Verona':    'Verona',
-      'Venezia FC':       'Venezia',
-      'AC Monza':         'Monza',
-      'Empoli FC':        'Empoli',
-      'Frosinone Calcio': 'Frosinone',
-    };
-
-    // Step 2: scarica rosa di ogni squadra con delay per evitare rate limit
-    // playerMap: { nomeNormalizzato → nomeClubNostro }
-    const playerMap = {};
     let done = 0;
-
     for (const club of clubs) {
       try {
         const ourClub = TM_CLUB_MAP[club.name] || club.name;
-        const squadData = await fetchTM(`/clubs/${club.id}/players?season_id=2025`);
-        const players = squadData.players || [];
-
-        for (const p of players) {
-          const name = p.name || '';
-          // Aggiungi varianti del nome per il matching
-          const variants = [
-            name.toLowerCase(),
-            name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),
-            name.split(' ').pop().toLowerCase(),
-            name.split(' ').pop().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),
-          ];
-          for (const v of variants) {
-            if (v && v.length > 1) playerMap[v] = { ourClub, fullName: name };
-          }
+        const data = await fetchTM(`/clubs/${club.id}/players?season_id=${SEASON}`);
+        for (const p of (data.players || [])) {
+          if (!p.name) continue;
+          const normFull    = norm(p.name);
+          const parts       = normFull.split(' ');
+          const normCognome = parts[parts.length - 1];
+          const normPrimo   = parts[0];
+          const entry = { ourClub, fullName: p.name, normFull, normCognome, normPrimo };
+          byFull[normFull] = entry;
+          if (!byCognome[normCognome]) byCognome[normCognome] = [];
+          byCognome[normCognome].push(entry);
         }
-
         done++;
-        setStatus(`Rosa scaricata: ${ourClub} (${done}/${clubs.length})…`, 'loading');
-
-        // Delay 300ms per rispettare il rate limit
-        await new Promise(r => setTimeout(r, 300));
-
-      } catch (e) {
-        done++;
-        console.warn('Errore club', club.name, e.message);
-      }
+        setStatus(`Rose scaricate: ${ourClub} (${done}/${clubs.length})…`, 'loading');
+        await new Promise(r => setTimeout(r, 350));
+      } catch(e) { done++; console.warn('Errore', club.name, e.message); }
     }
 
-    setStatus(`Rose scaricate. Incrocio con la lista (${Object.keys(playerMap).length} giocatori TM)…`, 'loading');
+    setStatus('Incrocio con la lista…', 'loading');
 
-    // Step 3: matching con la nostra lista
-    const matchPlayer = (nome) => {
-      const variants = [
-        nome.toLowerCase(),
-        nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),
-        // Solo cognome (es "Martinez L." → "martinez")
-        nome.toLowerCase().replace(/[^a-zàèéìòù ]/g,'').trim().split(' ').filter(w=>w.length>1).pop(),
-        nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').trim().split(' ').filter(w=>w.length>1).pop(),
-        // Primo token significativo
-        nome.toLowerCase().replace(/[^a-zàèéìòù ]/g,'').trim().split(' ')[0],
-      ];
-      for (const v of variants) {
-        if (v && playerMap[v]) return playerMap[v];
+    // Matching: nome nella nostra lista → entry TM
+    const matchPlayer = (nomeNostra, clubNostra) => {
+      const nNorm     = norm(nomeNostra);
+      const parts     = nNorm.split(' ');
+      const cognome   = parts[parts.length - 1];
+      const primaParte= parts[0];
+
+      // 1. Match esatto nome completo normalizzato
+      if (byFull[nNorm]) return byFull[nNorm];
+
+      // 2. Cognome univoco (solo 1 giocatore con quel cognome in Serie A)
+      const byCog = byCognome[cognome] || [];
+      if (byCog.length === 1) return byCog[0];
+
+      // 3. Cognome ambiguo: filtra per club atteso
+      if (byCog.length > 1) {
+        const sameClub = byCog.filter(e => e.ourClub === clubNostra);
+        if (sameClub.length === 1) return sameClub[0];
+        // Nessuno o troppi nella stessa squadra → usa club atteso come tiebreak
+        if (sameClub.length === 0) {
+          // Prova match parziale nome (es "Miranda J." contiene "miranda")
+          for (const e of byCog) {
+            if (e.normFull.includes(cognome)) {
+              // Controlla che il club sia quello atteso
+              if (e.ourClub === clubNostra) return e;
+            }
+          }
+        }
       }
+
+      // 4. Primo token (es "Paz N." → cerca "paz" come primo nome)
+      const byPrimo = Object.values(byFull).filter(e => e.normPrimo === primaParte || e.normCognome === primaParte);
+      if (byPrimo.length === 1) return byPrimo[0];
+      if (byPrimo.length > 1) {
+        const sameClub = byPrimo.filter(e => e.ourClub === clubNostra);
+        if (sameClub.length === 1) return sameClub[0];
+      }
+
       return null;
     };
 
@@ -385,8 +378,8 @@ async function aggiornaMercato() {
     MERCATO = {};
 
     for (const p of DATA) {
-      const nk = p.nome.toLowerCase();
-      const found = matchPlayer(p.nome);
+      const nk    = p.nome.toLowerCase();
+      const found = matchPlayer(p.nome, p.club);
 
       if (!found) {
         MERCATO[nk] = { status: 'nv', nuovaSquadra: null, vecchiaSquadra: p.club };
