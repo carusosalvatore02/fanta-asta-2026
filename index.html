@@ -89,6 +89,7 @@
   }
   .nome{font-weight:600; white-space:nowrap;}
   .commento{color:var(--muted); font-size:12.5px; min-width:220px;}
+  .tags{max-width:120px;}
   .actions{display:flex; gap:6px; white-space:nowrap;}
   .btn{
     border:1px solid var(--border); background:var(--panel2); color:var(--text);
@@ -138,6 +139,10 @@
   }
   .spec-badge.rig{ background:#e0b73a; }
   .spec-badge.piaz{ background:#7ec4e0; }
+  .note-badge{
+    display:inline-block; font-size:8px; font-weight:800; padding:1px 4px; border-radius:3px;
+    margin:1px 2px 1px 0; color:#111; line-height:1.5; white-space:nowrap;
+  }
   .star-toggle{
     display:inline-block; cursor:pointer; font-size:15px; color:var(--muted);
     margin-right:5px; vertical-align:middle; user-select:none; -webkit-user-select:none;
@@ -195,7 +200,9 @@
     <option value="fascia">Ordina: Fascia</option>
     <option value="squadra">Ordina: Squadra</option>
     <option value="qtA">Ordina: Qt.A</option>
-    <option value="fvm">Ordina: FVM</option>
+    <option value="prezzoMax">Ordina: Prezzo Max</option>
+    <option value="presenze">Ordina: Presenze</option>
+    <option value="fmvExp">Ordina: FMV Exp.</option>
     <option value="prezzo">Ordina: Prezzo</option>
   </select>
   <button type="button" id="sortDirBtn" class="dir-btn" title="Inverti ordine">▲</button>
@@ -205,7 +212,9 @@
     <option value="nome">Poi: Nome</option>
     <option value="squadra">Poi: Squadra</option>
     <option value="qtA">Poi: Qt.A</option>
-    <option value="fvm">Poi: FVM</option>
+    <option value="prezzoMax">Poi: Prezzo Max</option>
+    <option value="presenze">Poi: Presenze</option>
+    <option value="fmvExp">Poi: FMV Exp.</option>
     <option value="prezzo">Poi: Prezzo</option>
     <option value="">Poi: nessuno</option>
   </select>
@@ -229,8 +238,11 @@
       <th class="sortable" data-sort="fascia">Fascia<span class="arrow"></span></th>
       <th class="sortable" data-sort="squadra">Squadra<span class="arrow"></span></th>
       <th class="sortable" data-sort="qtA">Qt.A<span class="arrow"></span></th>
-      <th class="sortable" data-sort="fvm" title="Ricalcolato su base 1500 fantamilioni">FVM<span class="arrow"></span></th>
+      <th class="sortable" data-sort="prezzoMax">Prezzo Max<span class="arrow"></span></th>
       <th>Note</th>
+      <th>Tag</th>
+      <th class="sortable" data-sort="presenze">Presenze<span class="arrow"></span></th>
+      <th class="sortable" data-sort="fmvExp">FMV Exp.<span class="arrow"></span></th>
       <th class="sortable" data-sort="prezzo">Prezzo<span class="arrow"></span></th>
       <th>Stato</th>
     </tr>
@@ -255,145 +267,187 @@
 const STORAGE_KEY = 'fantacalcio_dashboard_state';
 
 const players = [
-  {nome:"De Gea", ruolo:"P", fascia:2, plus:false, commento:"Da prendere con Falcone e Caprile per risparmiare", squadra:"Fiorentina", qtA:13, fvm:68},
-  {nome:"Svilar", ruolo:"P", fascia:1, plus:false, commento:"", squadra:"Roma", qtA:18, fvm:98},
-  {nome:"Butez", ruolo:"P", fascia:1, plus:false, commento:"", squadra:"Como", qtA:16, fvm:84},
-  {nome:"Okoye", ruolo:"P", fascia:3, plus:false, commento:"", squadra:"Udinese", qtA:9, fvm:44},
-  {nome:"Caprile", ruolo:"P", fascia:3, plus:false, commento:"", squadra:"Cagliari", qtA:9, fvm:40},
-  {nome:"Martinez Jo.", ruolo:"P", fascia:1, plus:false, commento:"", squadra:"Inter", qtA:17, fvm:94},
-  {nome:"Palmisani", ruolo:"P", fascia:3, plus:false, commento:"Forte per me", squadra:"Frosinone", qtA:4, fvm:12},
-  {nome:"Skorupski", ruolo:"P", fascia:3, plus:true, commento:"Problema infortuni", squadra:"Bologna", qtA:10, fvm:56},
+  {nome:"De Gea", ruolo:"P", fascia:2, plus:false, commento:"Da prendere con Falcone e Caprile per risparmiare. ABBIN a 2: FIO-CAG, FIO-GEN, FIO-UDI ABBIN a 3: FIO-GEN-CAG, FIO-LEC-CRE", prezzoMax:72, presenze:37, fmvExp:5.07, notes:["titolarissimo", "modificatore", "pararigori"], squadra:"Fiorentina", qtA:13},
+  {nome:"Svilar", ruolo:"P", fascia:1, plus:false, commento:"", prezzoMax:165, presenze:38, fmvExp:5.34, notes:["titolarissimo", "modificatore", "imbattibilità"], squadra:"Roma", qtA:18},
+  {nome:"Butez", ruolo:"P", fascia:1, plus:false, commento:"", prezzoMax:129, presenze:38, fmvExp:5.18, notes:["modificatore", "titolarissimo", "imbattibilità"], squadra:"Como", qtA:16},
+  {nome:"Okoye", ruolo:"P", fascia:3, plus:false, commento:"", prezzoMax:33, presenze:30, fmvExp:4.96, notes:["modificatore", "rischio infortuni"], squadra:"Udinese", qtA:9},
+  {nome:"Caprile", ruolo:"P", fascia:3, plus:false, commento:"", prezzoMax:30, presenze:38, fmvExp:4.94, notes:["modificatore", "titolarissimo"], squadra:"Cagliari", qtA:9},
+  {nome:"Martinez Jo.", ruolo:"P", fascia:1, plus:false, commento:"", prezzoMax:132, presenze:5, fmvExp:5.21, notes:["modificatore", "imbattibilità"], squadra:"Inter", qtA:17},
+  {nome:"Palmisani", ruolo:"P", fascia:3, plus:false, commento:"Forte per me", prezzoMax:6, presenze:38, fmvExp:4.73, notes:["scommessa"], squadra:"Frosinone", qtA:4},
+  {nome:"Skorupski", ruolo:"P", fascia:3, plus:true, commento:"Problema infortuni. Con Ravaglia -> ABBIN a 2: BOL-COM, BOL-CRE, BOL-PIS. ABBIN a 3: BOL-COM-LEC, BOL-GEN-CAG, BOL-LEC-CRE.", prezzoMax:48, presenze:18, fmvExp:5.12, notes:["modificatore", "pararigori"], squadra:"Bologna", qtA:10},
 
-  {nome:"Di Marco", ruolo:"D", fascia:1, plus:false, commento:"2° Calci piazzati", squadra:"Inter", qtA:32, fvm:398, rig:null, piaz:2},
-  {nome:"Wesley", ruolo:"D", fascia:2, plus:false, commento:"", squadra:"Roma", qtA:17, fvm:135},
-  {nome:"Obert", ruolo:"D", fascia:3, plus:false, commento:"", squadra:"Cagliari", qtA:7, fvm:21},
-  {nome:"Vasquez", ruolo:"D", fascia:3, plus:false, commento:"", squadra:"Genoa", qtA:9, fvm:50},
-  {nome:"Hermoso", ruolo:"D", fascia:3, plus:false, commento:"Bonus, ma attenzione a Koulierakis (potrebbe rubargli il posto)", squadra:"Roma", qtA:10, fvm:39},
-  {nome:"N'Dicka", ruolo:"D", fascia:3, plus:false, commento:"Bonus", squadra:"Roma", qtA:13, fvm:66},
-  {nome:"Idzes", ruolo:"D", fascia:3, plus:false, commento:"", squadra:"Sassuolo", qtA:7, fvm:2},
-  {nome:"Hainaut", ruolo:"D", fascia:3, plus:false, commento:"Da capire se titolare fisso", squadra:"Venezia", qtA:3, fvm:10},
-  {nome:"Birindelli", ruolo:"D", fascia:3, plus:false, commento:"", squadra:"Monza", qtA:4, fvm:18},
-  {nome:"Rodriguez Ju.", ruolo:"D", fascia:3, plus:false, commento:"", squadra:"Cagliari", qtA:3, fvm:15},
-  {nome:"Spinazzola", ruolo:"D", fascia:3, plus:false, commento:"Pochi bonus", squadra:"Napoli", qtA:8, fvm:36},
-  {nome:"Miranda", ruolo:"D", fascia:3, plus:false, commento:"Pochi bonus. 3° Calci piazzati", squadra:"Bologna", qtA:8, fvm:36, rig:null, piaz:3},
-  {nome:"Martin", ruolo:"D", fascia:3, plus:false, commento:"2° Calci piazzati", squadra:"Genoa", qtA:5, fvm:22, rig:null, piaz:2},
-  {nome:"Valeri", ruolo:"D", fascia:3, plus:false, commento:"Pochi bonus. 3° Rigorista e 3° Calci piazzati", squadra:"Parma", qtA:8, fvm:36, rig:3, piaz:3},
-  {nome:"Correia T.", ruolo:"D", fascia:3, plus:false, commento:"Titolare ma controllare bene", squadra:"Venezia", qtA:4, fvm:18},
-  {nome:"Cuenca", ruolo:"D", fascia:4, plus:false, commento:"Scommessa", squadra:"Como", qtA:1, fvm:12},
-  {nome:"Stones", ruolo:"D", fascia:4, plus:false, commento:"", squadra:"Inter", qtA:12, fvm:57},
-  {nome:"Koulierakis", ruolo:"D", fascia:4, plus:false, commento:"Roma, alternativa a Hermoso/N'Dicka/Mancini — verificare gerarchie a ridosso della prima giornata", squadra:"Roma", qtA:8, fvm:30},
-  {nome:"Akanji", ruolo:"D", fascia:1, plus:false, commento:"", squadra:"Inter", qtA:16, fvm:82},
-  {nome:"Kempf", ruolo:"D", fascia:2, plus:false, commento:"", squadra:"Como", qtA:5, fvm:20},
-  {nome:"Zappacosta", ruolo:"D", fascia:3, plus:false, commento:"", squadra:"Atalanta", qtA:8, fvm:36},
-  {nome:"Del Prato", ruolo:"D", fascia:3, plus:false, commento:"", squadra:"Parma", qtA:8, fvm:32},
-  {nome:"Tiago Gabriel", ruolo:"D", fascia:3, plus:false, commento:"", squadra:"Lecce", qtA:7, fvm:26},
-  {nome:"Tomori", ruolo:"D", fascia:4, plus:false, commento:"Scommessa", squadra:"Milan", qtA:7, fvm:30},
-  {nome:"Di Lorenzo", ruolo:"D", fascia:3, plus:true, commento:"", squadra:"Napoli", qtA:12, fvm:60},
-  {nome:"Monterisi", ruolo:"D", fascia:3, plus:false, commento:"Possibili bonus", squadra:"Frosinone", qtA:6, fvm:21},
-  {nome:"Mancini", ruolo:"D", fascia:1, plus:false, commento:"", squadra:"Roma", qtA:15, fvm:74},
-  {nome:"Jimenez A.", ruolo:"D", fascia:2, plus:false, commento:"", squadra:"Fiorentina", qtA:8, fvm:34},
-  {nome:"Ramon", ruolo:"D", fascia:2, plus:false, commento:"Pochi bonus, titolare media alta", squadra:"Como", qtA:10, fvm:48},
-  {nome:"Scalvini", ruolo:"D", fascia:3, plus:false, commento:"", squadra:"Atalanta", qtA:10, fvm:42},
+  {nome:"Di Marco", ruolo:"D", fascia:1, plus:false, commento:"2° Calci piazzati", prezzoMax:225, presenze:35, fmvExp:7.36, notes:["modificatore", "tiratore", "bonus", "titolarissimo"], squadra:"Inter", qtA:32, rig:null, piaz:2},
+  {nome:"Wesley", ruolo:"D", fascia:2, plus:false, commento:"", prezzoMax:114, presenze:30, fmvExp:6.59, notes:["bonus", "titolarissimo", "modificatore"], squadra:"Roma", qtA:17},
+  {nome:"Obert", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:9, presenze:34, fmvExp:6.01, notes:["cartellini", "titolarissimo"], squadra:"Cagliari", qtA:7},
+  {nome:"Vasquez", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:36, presenze:36, fmvExp:6.11, notes:["titolarissimo", "cartellini", "modificatore"], squadra:"Genoa", qtA:9},
+  {nome:"Hermoso", ruolo:"D", fascia:3, plus:false, commento:"Bonus, ma attenzione a Koulierakis (potrebbe rubargli il posto)", prezzoMax:9, presenze:27, fmvExp:6.28, notes:["cartellini", "modificatore", "subentrante"], squadra:"Roma", qtA:10},
+  {nome:"N'Dicka", ruolo:"D", fascia:3, plus:false, commento:"Bonus", prezzoMax:60, presenze:31, fmvExp:6.35, notes:["cartellini", "modificatore", "titolarissimo"], squadra:"Roma", qtA:13},
+  {nome:"Idzes", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:9, presenze:35, fmvExp:6.02, notes:["modificatore", "titolarissimo"], squadra:"Sassuolo", qtA:7},
+  {nome:"Hainaut", ruolo:"D", fascia:3, plus:false, commento:"Da capire se titolare fisso", prezzoMax:18, presenze:37, fmvExp:6.06, notes:["bonus", "scommessa"], squadra:"Venezia", qtA:3},
+  {nome:"Birindelli", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:12, presenze:37, fmvExp:6.27, notes:["bonus", "cartellini", "titolarissimo"], squadra:"Monza", qtA:4},
+  {nome:"Rodriguez Ju.", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:16, fmvExp:5.98, notes:["incostante", "titolarissimo"], squadra:"Cagliari", qtA:3},
+  {nome:"Spinazzola", ruolo:"D", fascia:3, plus:false, commento:"Pochi bonus", prezzoMax:57, presenze:30, fmvExp:6.43, notes:["rischio infortuni", "modificatore", "bonus"], squadra:"Napoli", qtA:8},
+  {nome:"Miranda", ruolo:"D", fascia:3, plus:false, commento:"Pochi bonus. 3° Calci piazzati", prezzoMax:33, presenze:31, fmvExp:6.09, notes:["assistman", "modificatore"], squadra:"Bologna", qtA:8, rig:null, piaz:3},
+  {nome:"Martin", ruolo:"D", fascia:3, plus:false, commento:"2° Calci piazzati", prezzoMax:3, presenze:29, fmvExp:6.05, notes:["tiratore", "assistman"], squadra:"Genoa", qtA:5, rig:null, piaz:2},
+  {nome:"Valeri", ruolo:"D", fascia:3, plus:false, commento:"Pochi bonus. 3° Rigorista e 3° Calci piazzati", prezzoMax:24, presenze:34, fmvExp:6.2, notes:["bonus", "modificatore", "titolarissimo"], squadra:"Parma", qtA:8, rig:3, piaz:3},
+  {nome:"Correia T.", ruolo:"D", fascia:3, plus:false, commento:"Titolare ma controllare bene", prezzoMax:3, presenze:24, fmvExp:5.92, notes:["scommessa", "subentrante"], squadra:"Venezia", qtA:4},
+  {nome:"Cuenca", ruolo:"D", fascia:4, plus:false, commento:"Scommessa", prezzoMax:0, presenze:8, fmvExp:5.91, notes:[], squadra:"Como", qtA:1},
+  {nome:"Stones", ruolo:"D", fascia:4, plus:false, commento:"", prezzoMax:24, presenze:9, fmvExp:6.19, notes:["rischio infortuni", "modificatore"], squadra:"Inter", qtA:12},
+  {nome:"Koulierakis", ruolo:"D", fascia:4, plus:false, commento:"Roma, alternativa a Hermoso/N'Dicka/Mancini — verificare gerarchie a ridosso della prima giornata", prezzoMax:27, presenze:29, fmvExp:6.03, notes:["scommessa"], squadra:"Roma", qtA:8},
+  {nome:"Akanji", ruolo:"D", fascia:1, plus:false, commento:"", prezzoMax:78, presenze:32, fmvExp:6.39, notes:["modificatore", "titolarissimo"], squadra:"Inter", qtA:16},
+  {nome:"Kempf", ruolo:"D", fascia:2, plus:false, commento:"", prezzoMax:45, presenze:29, fmvExp:6.41, notes:["modificatore", "subentrante"], squadra:"Como", qtA:5},
+  {nome:"Zappacosta", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:33, presenze:35, fmvExp:6.22, notes:["bonus", "rischio infortuni"], squadra:"Atalanta", qtA:8},
+  {nome:"Del Prato", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:15, presenze:35, fmvExp:6.22, notes:["titolarissimo", "bonus", "cartellini", "modificatore"], squadra:"Parma", qtA:8},
+  {nome:"Tiago Gabriel", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:6, presenze:36, fmvExp:6.1, notes:["scommessa", "titolarissimo", "modificatore"], squadra:"Lecce", qtA:7},
+  {nome:"Tomori", ruolo:"D", fascia:4, plus:false, commento:"Scommessa", prezzoMax:3, presenze:32, fmvExp:6.03, notes:["rischio infortuni", "modificatore"], squadra:"Milan", qtA:7},
+  {nome:"Di Lorenzo", ruolo:"D", fascia:3, plus:true, commento:"", prezzoMax:51, presenze:26, fmvExp:6.44, notes:["modificatore", "bonus", "rischio infortuni", "titolarissimo"], squadra:"Napoli", qtA:12},
+  {nome:"Monterisi", ruolo:"D", fascia:3, plus:false, commento:"Possibili bonus", prezzoMax:3, presenze:25, fmvExp:5.83, notes:["cartellini"], squadra:"Frosinone", qtA:6},
+  {nome:"Mancini", ruolo:"D", fascia:1, plus:false, commento:"", prezzoMax:87, presenze:36, fmvExp:6.52, notes:["titolarissimo", "modificatore", "cartellini", "tanti gol"], squadra:"Roma", qtA:15},
+  {nome:"Jimenez A.", ruolo:"D", fascia:2, plus:false, commento:"", prezzoMax:57, presenze:1, fmvExp:6.39, notes:["scommessa", "cartellini", "bonus"], squadra:"Fiorentina", qtA:8},
+  {nome:"Ramon", ruolo:"D", fascia:2, plus:false, commento:"Pochi bonus, titolare media alta", prezzoMax:54, presenze:32, fmvExp:6.18, notes:["modificatore", "titolarissimo", "tanti gol", "cartellini"], squadra:"Como", qtA:10},
+  {nome:"Scalvini", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:45, presenze:24, fmvExp:6.24, notes:["cartellini", "rischio infortuni", "tanti gol"], squadra:"Atalanta", qtA:10},
 
-  {nome:"Zielinski", ruolo:"C", fascia:2, plus:false, commento:"2° Rigorista e 3° Calci piazzati", squadra:"Inter", qtA:10, fvm:62, rig:2, piaz:3},
-  {nome:"Baturina", ruolo:"C", fascia:2, plus:false, commento:"2° Calci piazzati", squadra:"Como", qtA:19, fvm:153, rig:null, piaz:2},
-  {nome:"Akinsanmiro", ruolo:"C", fascia:3, plus:false, commento:"", squadra:"Monza", qtA:6, fvm:24},
-  {nome:"Rodriguez Je.", ruolo:"C", fascia:3, plus:true, commento:"Pochi bonus, titolarità?", squadra:"Como", qtA:12, fvm:48},
-  {nome:"Rowe", ruolo:"C", fascia:2, plus:false, commento:"Bonus, gioca alto", squadra:"Bologna", qtA:11, fvm:56},
-  {nome:"Politano", ruolo:"C", fascia:3, plus:true, commento:"3° Rigorista e 2° Calci piazzati", squadra:"Napoli", qtA:10, fvm:70, rig:3, piaz:2},
-  {nome:"Vlasic", ruolo:"C", fascia:2, plus:false, commento:"1° Rigorista e 1° Calci piazzati", squadra:"Torino", qtA:14, fvm:120, rig:1, piaz:1},
-  {nome:"Taylor K.", ruolo:"C", fascia:2, plus:false, commento:"2° Rigorista", squadra:"Lazio", qtA:13, fvm:96, rig:2, piaz:null},
-  {nome:"Baldanzi", ruolo:"C", fascia:3, plus:true, commento:"Pochi bonus ma potrebbe migliorare da trequartista. 1° Calci piazzati", squadra:"Genoa", qtA:11, fvm:45, rig:null, piaz:1},
-  {nome:"Douglas Luiz", ruolo:"C", fascia:4, plus:false, commento:"", squadra:"Juventus", qtA:4, fvm:18},
-  {nome:"Koutsoupias", ruolo:"C", fascia:4, plus:false, commento:"Forse titolare Frosinone", squadra:"Frosinone", qtA:4, fvm:18},
-  {nome:"Calhanoglu", ruolo:"C", fascia:1, plus:false, commento:"1° Rigorista e 1° Calci piazzati", squadra:"Inter", qtA:27, fvm:345, rig:1, piaz:1},
-  {nome:"Zambo Anguissa", ruolo:"C", fascia:4, plus:false, commento:"Titolare ma a rischio", squadra:"Napoli", qtA:11, fvm:82},
-  {nome:"De Bruyne", ruolo:"C", fascia:2, plus:false, commento:"Possibili bonus. 1° Rigorista e 1° Calci piazzati", squadra:"Napoli", qtA:15, fvm:150, rig:1, piaz:1},
-  {nome:"Amorim", ruolo:"C", fascia:4, plus:false, commento:"Scommessa, titolare?", squadra:"Genoa", qtA:4, fvm:16},
-  {nome:"Mastantuono", ruolo:"C", fascia:2, plus:false, commento:"2° Calci piazzati", squadra:"", qtA:null, fvm:null, rig:null, piaz:2},
-  {nome:"Cataldi", ruolo:"C", fascia:3, plus:false, commento:"Titolarità da verificare — costa pochissimo, si può rischiare. 3° Rigorista e 3° Calci piazzati", squadra:"Lazio", qtA:4, fvm:18, rig:3, piaz:3},
-  {nome:"Gaetano", ruolo:"C", fascia:3, plus:false, commento:"3° Calci piazzati", squadra:"Atalanta", qtA:7, fvm:36, rig:null, piaz:3},
-  {nome:"Locatelli", ruolo:"C", fascia:3, plus:false, commento:"Pochi bonus, titolare. 3° Rigorista e 2° Calci piazzati", squadra:"Juventus", qtA:8, fvm:48, rig:3, piaz:2},
+  {nome:"Zielinski", ruolo:"C", fascia:2, plus:false, commento:"2° Rigorista e 3° Calci piazzati", prezzoMax:114, presenze:30, fmvExp:6.83, notes:["bonus", "rigorista", "rischio infortuni"], squadra:"Inter", qtA:10, rig:2, piaz:3},
+  {nome:"Baturina", ruolo:"C", fascia:2, plus:false, commento:"2° Calci piazzati", prezzoMax:126, presenze:25, fmvExp:7, notes:["bonus", "costante"], squadra:"Como", qtA:19, rig:null, piaz:2},
+  {nome:"Akinsanmiro", ruolo:"C", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:23, fmvExp:5.96, notes:["costante"], squadra:"Monza", qtA:6},
+  {nome:"Rodriguez Je.", ruolo:"C", fascia:3, plus:true, commento:"Pochi bonus, titolarità?", prezzoMax:72, presenze:28, fmvExp:6.83, notes:["bonus", "costante"], squadra:"Como", qtA:12},
+  {nome:"Rowe", ruolo:"C", fascia:2, plus:false, commento:"Bonus, gioca alto", prezzoMax:90, presenze:28, fmvExp:6.71, notes:["bonus", "rischio infortuni", "costante"], squadra:"Bologna", qtA:11},
+  {nome:"Politano", ruolo:"C", fascia:3, plus:true, commento:"3° Rigorista e 2° Calci piazzati", prezzoMax:9, presenze:33, fmvExp:6.58, notes:["costante", "assistman"], squadra:"Napoli", qtA:10, rig:3, piaz:2},
+  {nome:"Vlasic", ruolo:"C", fascia:2, plus:false, commento:"1° Rigorista e 1° Calci piazzati", prezzoMax:84, presenze:37, fmvExp:6.72, notes:["bonus", "rigorista", "rischio infortuni", "incostante"], squadra:"Torino", qtA:14, rig:1, piaz:1},
+  {nome:"Taylor K.", ruolo:"C", fascia:2, plus:false, commento:"2° Rigorista", prezzoMax:60, presenze:17, fmvExp:6.5, notes:["scommessa", "costante"], squadra:"Lazio", qtA:13, rig:2, piaz:null},
+  {nome:"Baldanzi", ruolo:"C", fascia:3, plus:true, commento:"Pochi bonus ma potrebbe migliorare da trequartista. 1° Calci piazzati", prezzoMax:33, presenze:17, fmvExp:6.54, notes:["costante", "bonus", "rischio infortuni"], squadra:"Genoa", qtA:11, rig:null, piaz:1},
+  {nome:"Douglas Luiz", ruolo:"C", fascia:4, plus:false, commento:"", prezzoMax:3, presenze:21, fmvExp:6.09, notes:["scommessa"], squadra:"Juventus", qtA:4},
+  {nome:"Koutsoupias", ruolo:"C", fascia:4, plus:false, commento:"Forse titolare Frosinone", prezzoMax:3, presenze:34, fmvExp:6.04, notes:["scommessa", "cartellini"], squadra:"Frosinone", qtA:4},
+  {nome:"Calhanoglu", ruolo:"C", fascia:1, plus:false, commento:"1° Rigorista e 1° Calci piazzati", prezzoMax:210, presenze:22, fmvExp:7.43, notes:["titolarissimo", "tiratore", "rigorista", "costante", "rischio infortuni"], squadra:"Inter", qtA:27, rig:1, piaz:1},
+  {nome:"Zambo Anguissa", ruolo:"C", fascia:4, plus:false, commento:"Titolare ma a rischio", prezzoMax:33, presenze:18, fmvExp:6.66, notes:["costante", "bonus"], squadra:"Napoli", qtA:11},
+  {nome:"De Bruyne", ruolo:"C", fascia:2, plus:false, commento:"Possibili bonus. 1° Rigorista e 1° Calci piazzati", prezzoMax:123, presenze:17, fmvExp:7.05, notes:["costante", "bonus", "rischio infortuni", "rigorista"], squadra:"Napoli", qtA:15, rig:1, piaz:1},
+  {nome:"Amorim", ruolo:"C", fascia:4, plus:false, commento:"Scommessa, titolare?", prezzoMax:0, presenze:9, fmvExp:5.96, notes:[], squadra:"Genoa", qtA:4},
+  {nome:"Mastantuono", ruolo:"C", fascia:2, plus:false, commento:"2° Calci piazzati", prezzoMax:123, presenze:23, fmvExp:6.94, notes:["bonus", "costante", "titolarissimo"], squadra:"", qtA:null, rig:null, piaz:2},
+  {nome:"Cataldi", ruolo:"C", fascia:3, plus:false, commento:"Titolarità da verificare — costa pochissimo, si può rischiare. 3° Rigorista e 3° Calci piazzati", prezzoMax:3, presenze:27, fmvExp:6.38, notes:["cartellini", "rischio infortuni", "titolarissimo"], squadra:"Lazio", qtA:4, rig:3, piaz:3},
+  {nome:"Gaetano", ruolo:"C", fascia:3, plus:false, commento:"3° Calci piazzati", prezzoMax:3, presenze:32, fmvExp:6.3, notes:["rischio infortuni", "costante"], squadra:"Atalanta", qtA:7, rig:null, piaz:3},
+  {nome:"Locatelli", ruolo:"C", fascia:3, plus:false, commento:"Pochi bonus, titolare. 3° Rigorista e 2° Calci piazzati", prezzoMax:3, presenze:36, fmvExp:6.37, notes:["cartellini", "costante", "titolarissimo"], squadra:"Juventus", qtA:8, rig:3, piaz:2},
 
-  {nome:"Davis K.", ruolo:"A", fascia:2, plus:false, commento:"1° Rigorista", squadra:"Udinese", qtA:19, fvm:182, rig:1, piaz:null},
-  {nome:"De Ketelaere", ruolo:"A", fascia:3, plus:false, commento:"1° Calci piazzati", squadra:"Atalanta", qtA:17, fvm:159, rig:null, piaz:1},
-  {nome:"Pellegrino", ruolo:"A", fascia:3, plus:false, commento:"9 gol passata stagione, titolare Parma. 1° Rigorista", squadra:"Parma", qtA:15, fvm:122, rig:1, piaz:null},
-  {nome:"Colombo", ruolo:"A", fascia:3, plus:false, commento:"Bonus, 7 gol. 1° Rigorista", squadra:"Genoa", qtA:11, fvm:94, rig:1, piaz:null},
-  {nome:"Adams A.", ruolo:"A", fascia:3, plus:false, commento:"1° Rigorista", squadra:"Venezia", qtA:12, fvm:78, rig:1, piaz:null},
-  {nome:"Mota", ruolo:"A", fascia:3, plus:false, commento:"3° Calci piazzati", squadra:"Monza", qtA:5, fvm:27, rig:null, piaz:3},
-  {nome:"Kulenovic", ruolo:"A", fascia:4, plus:false, commento:"2° Rigorista", squadra:"Torino", qtA:4, fvm:14, rig:2, piaz:null},
-  {nome:"Martinez L.", ruolo:"A", fascia:1, plus:false, commento:"3° Rigorista", squadra:"Inter", qtA:35, fvm:555, rig:3, piaz:null},
-  {nome:"Leao", ruolo:"A", fascia:2, plus:false, commento:"Inaffidabile", squadra:"Milan", qtA:18, fvm:180},
-  {nome:"Berardi", ruolo:"A", fascia:3, plus:false, commento:"1° Rigorista e 1° Calci piazzati", squadra:"Sassuolo", qtA:18, fvm:172, rig:1, piaz:1},
-  {nome:"Kean", ruolo:"A", fascia:1, plus:false, commento:"2° Rigorista", squadra:"Fiorentina", qtA:25, fvm:318, rig:2, piaz:null},
-  {nome:"Pinamonti", ruolo:"A", fascia:2, plus:false, commento:"2° Rigorista", squadra:"Sassuolo", qtA:13, fvm:87, rig:2, piaz:null},
-  {nome:"Yildiz", ruolo:"A", fascia:2, plus:false, commento:"2° Rigorista e 1° Calci piazzati", squadra:"Juventus", qtA:23, fvm:300, rig:2, piaz:1},
+  {nome:"Davis K.", ruolo:"A", fascia:2, plus:false, commento:"1° Rigorista", prezzoMax:186, presenze:30, fmvExp:7.28, notes:["rischio infortuni", "tanti gol", "titolarissimo", "rigorista"], squadra:"Udinese", qtA:19, rig:1, piaz:null},
+  {nome:"De Ketelaere", ruolo:"A", fascia:3, plus:false, commento:"1° Calci piazzati", prezzoMax:135, presenze:31, fmvExp:6.86, notes:["bonus", "costante"], squadra:"Atalanta", qtA:17, rig:null, piaz:1},
+  {nome:"Pellegrino", ruolo:"A", fascia:3, plus:false, commento:"9 gol passata stagione, titolare Parma. 1° Rigorista", prezzoMax:111, presenze:37, fmvExp:6.77, notes:["tanti gol"], squadra:"Parma", qtA:15, rig:1, piaz:null},
+  {nome:"Colombo", ruolo:"A", fascia:3, plus:false, commento:"Bonus, 7 gol. 1° Rigorista", prezzoMax:129, presenze:37, fmvExp:6.83, notes:["rigorista", "titolarissimo"], squadra:"Genoa", qtA:11, rig:1, piaz:null},
+  {nome:"Adams A.", ruolo:"A", fascia:3, plus:false, commento:"1° Rigorista", prezzoMax:66, presenze:32, fmvExp:6.69, notes:["scommessa"], squadra:"Venezia", qtA:12, rig:1, piaz:null},
+  {nome:"Mota", ruolo:"A", fascia:3, plus:false, commento:"3° Calci piazzati", prezzoMax:24, presenze:34, fmvExp:6.49, notes:["costante", "titolarissimo"], squadra:"Monza", qtA:5, rig:null, piaz:3},
+  {nome:"Kulenovic", ruolo:"A", fascia:4, plus:false, commento:"2° Rigorista", squadra:"Torino", qtA:4, rig:2, piaz:null},
+  {nome:"Martinez L.", ruolo:"A", fascia:1, plus:false, commento:"3° Rigorista", prezzoMax:450, presenze:30, fmvExp:8.13, notes:["titolarissimo", "tanti gol", "costante"], squadra:"Inter", qtA:35, rig:3, piaz:null},
+  {nome:"Leao", ruolo:"A", fascia:2, plus:false, commento:"Inaffidabile", prezzoMax:195, presenze:28, fmvExp:7.09, notes:["titolarissimo", "bonus"], squadra:"Milan", qtA:18},
+  {nome:"Berardi", ruolo:"A", fascia:3, plus:false, commento:"1° Rigorista e 1° Calci piazzati", prezzoMax:168, presenze:26, fmvExp:7.11, notes:["titolarissimo", "rischio infortuni", "bonus", "rigorista", "tiratore"], squadra:"Sassuolo", qtA:18, rig:1, piaz:1},
+  {nome:"Kean", ruolo:"A", fascia:1, plus:false, commento:"2° Rigorista", prezzoMax:234, presenze:26, fmvExp:7.49, notes:["titolarissimo", "tanti gol", "rischio infortuni"], squadra:"Fiorentina", qtA:25, rig:2, piaz:null},
+  {nome:"Pinamonti", ruolo:"A", fascia:2, plus:false, commento:"2° Rigorista", prezzoMax:93, presenze:34, fmvExp:6.79, notes:["incostante", "tanti gol", "titolarissimo"], squadra:"Sassuolo", qtA:13, rig:2, piaz:null},
+  {nome:"Yildiz", ruolo:"A", fascia:2, plus:false, commento:"2° Rigorista e 1° Calci piazzati", prezzoMax:225, presenze:35, fmvExp:7.23, notes:["costante", "titolarissimo", "bonus"], squadra:"Juventus", qtA:23, rig:2, piaz:1},
 
-  {nome:"Da Cunha", ruolo:"C", fascia:2, plus:false, commento:"1° Rigorista e 3° Calci piazzati", squadra:"Como", qtA:18, fvm:135, rig:1, piaz:3},
-  {nome:"Barella", ruolo:"C", fascia:2, plus:false, commento:"", squadra:"Inter", qtA:17, fvm:123},
-  {nome:"McTominay", ruolo:"C", fascia:1, plus:false, commento:"", squadra:"Napoli", qtA:28, fvm:360},
-  {nome:"Atta", ruolo:"C", fascia:2, plus:false, commento:"3° Calci piazzati", squadra:"Fiorentina", qtA:17, fvm:130, rig:null, piaz:3},
-  {nome:"Ederson D.S.", ruolo:"C", fascia:3, plus:true, commento:"Qualche bonus", squadra:"Atalanta", qtA:12, fvm:68},
-  {nome:"Orsolini", ruolo:"C", fascia:1, plus:false, commento:"1° Rigorista e 1° Calci piazzati", squadra:"Bologna", qtA:26, fvm:300, rig:1, piaz:1},
-  {nome:"Diouf", ruolo:"C", fascia:3, plus:true, commento:"Possibile bonus se titolare fisso", squadra:"Inter", qtA:8, fvm:56},
-  {nome:"Konè M.", ruolo:"C", fascia:3, plus:true, commento:"Bonus", squadra:"Roma", qtA:10, fvm:63},
-  {nome:"Adzic", ruolo:"C", fascia:4, plus:true, commento:"Rientro Konè I. a dicembre. 3° Calci piazzati", squadra:"Sassuolo", qtA:5, fvm:21, rig:null, piaz:3},
-  {nome:"Zaniolo", ruolo:"C", fascia:2, plus:false, commento:"Gioca alto, bonus. 3° Rigorista e 1° Calci piazzati", squadra:"Udinese", qtA:18, fvm:135, rig:3, piaz:1},
-  {nome:"Ekkelenkamp", ruolo:"C", fascia:3, plus:true, commento:"Bonus. 2° Calci piazzati", squadra:"Udinese", qtA:10, fvm:62, rig:null, piaz:2},
-  {nome:"Rabiot", ruolo:"C", fascia:2, plus:false, commento:"Bonus", squadra:"Milan", qtA:22, fvm:192},
-  {nome:"Paz N.", ruolo:"C", fascia:1, plus:false, commento:"3° Rigorista e 1° Calci piazzati", squadra:"Como", qtA:30, fvm:375, rig:3, piaz:1},
-  {nome:"Pulisic", ruolo:"C", fascia:1, plus:false, commento:"3° Rigorista e 2° Calci piazzati", squadra:"Milan", qtA:25, fvm:270, rig:3, piaz:2},
-  {nome:"Oulai", ruolo:"C", fascia:4, plus:false, commento:"Scommessa", squadra:"Fiorentina", qtA:6, fvm:30},
-  {nome:"McKennie", ruolo:"C", fascia:2, plus:false, commento:"Bonus", squadra:"Juventus", qtA:17, fvm:102},
-  {nome:"Bernardeschi", ruolo:"C", fascia:3, plus:false, commento:"Dubbio se sarà sempre titolare. 2° Rigorista e 2° Calci piazzati", squadra:"Bologna", qtA:9, fvm:32, rig:2, piaz:2},
-  {nome:"Otoa", ruolo:"C", fascia:4, plus:false, commento:"Scommessa", squadra:"Genoa", qtA:2, fvm:8},
-  {nome:"Samardzic", ruolo:"C", fascia:4, plus:false, commento:"Scommessa. 3° Rigorista e 2° Calci piazzati", squadra:"Atalanta", qtA:12, fvm:63, rig:3, piaz:2},
-  {nome:"Casadei", ruolo:"C", fascia:4, plus:false, commento:"Possibile titolare", squadra:"Torino", qtA:10, fvm:56},
-  {nome:"Cristante", ruolo:"C", fascia:3, plus:false, commento:"Pochi bonus, titolare", squadra:"Roma", qtA:8, fvm:44},
-  {nome:"Calò", ruolo:"C", fascia:2, plus:true, commento:"Bonus. 1° Rigorista e 1° Calci piazzati", squadra:"Frosinone", qtA:7, fvm:38, rig:1, piaz:1},
-  {nome:"Lobotka", ruolo:"C", fascia:3, plus:false, commento:"Titolare senza bonus", squadra:"Napoli", qtA:7, fvm:30},
-  {nome:"Thorstvedt", ruolo:"C", fascia:3, plus:false, commento:"Pochi bonus", squadra:"Sassuolo", qtA:10, fvm:62},
-  {nome:"Berisha M.", ruolo:"C", fascia:3, plus:false, commento:"Viene da lungo infortunio, 2 gol e 3 assist nelle prime 12 partite poi stagione finita. 3° Rigorista e 2° Calci piazzati", squadra:"Lecce", qtA:5, fvm:24, rig:3, piaz:2},
-  {nome:"Gudmundsson A.", ruolo:"C", fascia:2, plus:false, commento:"1° Rigorista e 1° Calci piazzati", squadra:"Fiorentina", qtA:13, fvm:92, rig:1, piaz:1},
-  {nome:"Mkhitaryan", ruolo:"C", fascia:3, plus:false, commento:"Evitare possibilmente", squadra:"Inter", qtA:5, fvm:28},
-  {nome:"Alajbegovic", ruolo:"C", fascia:2, plus:false, commento:"Magari in coppia con Thuram K. o McKennie", squadra:"Juventus", qtA:12, fvm:86},
-  {nome:"Thuram K.", ruolo:"C", fascia:3, plus:false, commento:"", squadra:"Juventus", qtA:10, fvm:62},
-  {nome:"Bernabè", ruolo:"C", fascia:3, plus:true, commento:"1° Calci piazzati", squadra:"Parma", qtA:7, fvm:54, rig:null, piaz:1},
-  {nome:"Saelemaekers", ruolo:"C", fascia:3, plus:false, commento:"Ma eviterei. 3° Calci piazzati", squadra:"Milan", qtA:10, fvm:64, rig:null, piaz:3},
-  {nome:"Perrone", ruolo:"C", fascia:3, plus:true, commento:"", squadra:"Como", qtA:10, fvm:57},
-  {nome:"Modric", ruolo:"C", fascia:3, plus:false, commento:"Non sono sicuro. 1° Calci piazzati", squadra:"Milan", qtA:12, fvm:75, rig:null, piaz:1},
-  {nome:"Zaccagni", ruolo:"C", fascia:2, plus:false, commento:"1° Rigorista e 2° Calci piazzati", squadra:"Lazio", qtA:16, fvm:136, rig:1, piaz:2},
-  {nome:"Konè I.", ruolo:"C", fascia:4, plus:false, commento:"Rientro a dicembre da infortunio", squadra:"Sassuolo", qtA:9, fvm:30},
-  {nome:"Scamacca", ruolo:"A", fascia:2, plus:false, commento:"1° Rigorista", squadra:"Atalanta", qtA:19, fvm:192, rig:1},
-  {nome:"Maldini", ruolo:"A", fascia:3, plus:false, commento:"Scommessa. Appena passato al Cagliari (9 ago 2026) in prestito dall'Atalanta. 1° Rigorista e 2° Calci piazzati", squadra:"Cagliari", qtA:5, fvm:21, rig:1, piaz:2},
-  {nome:"Kolo Muani", ruolo:"A", fascia:1, plus:false, commento:"1° Rigorista", squadra:"Juventus", qtA:26, fvm:338, rig:1},
-  {nome:"Geubbels", ruolo:"A", fascia:3, plus:false, commento:"1° Rigorista", squadra:"Lecce", qtA:9, fvm:38, rig:1},
-  {nome:"Nkunku", ruolo:"A", fascia:4, plus:false, commento:"1° Rigorista", squadra:"Milan", qtA:13, fvm:78, rig:1},
-  {nome:"Pessina", ruolo:"C", fascia:3, plus:true, commento:"1° Rigorista e 1° Calci piazzati", squadra:"Monza", qtA:7, fvm:30, rig:1, piaz:1},
-  {nome:"Malen", ruolo:"A", fascia:1, plus:false, commento:"1° Rigorista e 2° Calci piazzati", squadra:"Roma", qtA:34, fvm:548, rig:1, piaz:2},
-  {nome:"Fazzini", ruolo:"C", fascia:3, plus:true, commento:"3° Rigorista e 1° Calci piazzati", squadra:"Cagliari", qtA:7, fvm:28, rig:3, piaz:1},
-  {nome:"Rovella", ruolo:"C", fascia:4, plus:false, commento:"1° Calci piazzati", squadra:"Lazio", qtA:6, fvm:24, piaz:1},
-  {nome:"Pierotti", ruolo:"C", fascia:3, plus:false, commento:"titolare scarso. 1° Calci piazzati", squadra:"Lecce", qtA:6, fvm:28, piaz:1},
-  {nome:"Dybala", ruolo:"A", fascia:3, plus:false, commento:"Non titolare al 100%. 2° Rigorista e 1° Calci piazzati", squadra:"Roma", qtA:14, fvm:100, rig:2, piaz:1},
-  {nome:"Busio", ruolo:"C", fascia:3, plus:false, commento:"1° Calci piazzati", squadra:"Venezia", qtA:5, fvm:21, piaz:1},
-  {nome:"Ghedjemis", ruolo:"A", fascia:3, plus:false, commento:"3° Rigorista e 2° Calci piazzati", squadra:"Frosinone", qtA:9, fvm:45, rig:3, piaz:2},
-  {nome:"Colpani", ruolo:"C", fascia:3, plus:false, commento:"2° Calci piazzati", squadra:"Monza", qtA:8, fvm:38, piaz:2},
-  {nome:"Nicolussi Caviglia", ruolo:"C", fascia:4, plus:false, commento:"Poco titolare. 2° Calci piazzati", squadra:"Parma", qtA:6, fvm:27, piaz:2},
-  {nome:"Laurientè", ruolo:"C", fascia:3, plus:false, commento:"3° Rigorista e 2° Calci piazzati", squadra:"Sassuolo", qtA:15, fvm:132, rig:3, piaz:2},
-  {nome:"Oristanio", ruolo:"C", fascia:4, plus:false, commento:"Poco titolare. 2° Calci piazzati", squadra:"Torino", qtA:7, fvm:40, piaz:2},
-  {nome:"Yeboah J.", ruolo:"A", fascia:3, plus:false, commento:"2° Calci piazzati", squadra:"Venezia", qtA:8, fvm:42, piaz:2},
-  {nome:"Krstovic", ruolo:"A", fascia:4, plus:false, commento:"Non titolare. 2° Rigorista", squadra:"Atalanta", qtA:18, fvm:150, rig:2},
-  {nome:"Mina", ruolo:"D", fascia:3, plus:false, commento:"2° Rigorista", squadra:"Cagliari", qtA:8, fvm:30, rig:2},
-  {nome:"Douvikas", ruolo:"A", fascia:2, plus:false, commento:"2° Rigorista", squadra:"Como", qtA:20, fvm:236, rig:2},
-  {nome:"Raimondo", ruolo:"A", fascia:3, plus:false, commento:"Scarso. 2° Rigorista", squadra:"Frosinone", qtA:7, fvm:36, rig:2},
-  {nome:"Ostigard", ruolo:"D", fascia:2, plus:false, commento:"2° Rigorista", squadra:"Genoa", qtA:11, fvm:60, rig:2},
-  {nome:"Stulic", ruolo:"A", fascia:4, plus:false, commento:"Non titolare. 2° Rigorista", squadra:"Lecce", qtA:7, fvm:27, rig:2},
-  {nome:"Ramos G.", ruolo:"A", fascia:1, plus:false, commento:"2° Rigorista", squadra:"Milan", qtA:27, fvm:360, rig:2},
-  {nome:"Cutrone", ruolo:"A", fascia:4, plus:false, commento:"Dubbio titolare. 2° Rigorista", squadra:"Monza", qtA:9, fvm:50, rig:2},
-  {nome:"Hojlund", ruolo:"A", fascia:2, plus:false, commento:"2° Rigorista", squadra:"Napoli", qtA:28, fvm:406, rig:2},
-  {nome:"Tourè E.", ruolo:"A", fascia:4, plus:false, commento:"Titolare non costante. Non presente nelle quotazioni ufficiali. 2° Rigorista", squadra:"Parma", qtA:null, fvm:null, rig:2},
-  {nome:"Solet", ruolo:"D", fascia:1, plus:false, commento:"2° Rigorista", squadra:"Udinese", qtA:13, fvm:69, rig:2},
-  {nome:"Rrahmani Al.", ruolo:"A", fascia:4, plus:false, commento:"Non titolare. 2° Rigorista", squadra:"Venezia", qtA:8, fvm:30, rig:2},
+  {nome:"Da Cunha", ruolo:"C", fascia:2, plus:false, commento:"1° Rigorista e 3° Calci piazzati", prezzoMax:120, presenze:35, fmvExp:6.85, notes:["bonus", "cartellini", "titolarissimo", "rigorista"], squadra:"Como", qtA:18, rig:1, piaz:3},
+  {nome:"Barella", ruolo:"C", fascia:2, plus:false, commento:"", prezzoMax:90, presenze:34, fmvExp:6.69, notes:["titolarissimo", "costante", "assistman"], squadra:"Inter", qtA:17},
+  {nome:"McTominay", ruolo:"C", fascia:1, plus:false, commento:"", prezzoMax:180, presenze:33, fmvExp:7.16, notes:["costante", "bonus", "titolarissimo"], squadra:"Napoli", qtA:28},
+  {nome:"Atta", ruolo:"C", fascia:2, plus:false, commento:"3° Calci piazzati", prezzoMax:108, presenze:32, fmvExp:6.78, notes:["costante", "titolarissimo", "bonus"], squadra:"Fiorentina", qtA:17, rig:null, piaz:3},
+  {nome:"Ederson D.S.", ruolo:"C", fascia:3, plus:true, commento:"Qualche bonus", prezzoMax:54, presenze:30, fmvExp:6.41, notes:["costante", "titolarissimo", "bonus"], squadra:"Atalanta", qtA:12},
+  {nome:"Orsolini", ruolo:"C", fascia:1, plus:false, commento:"1° Rigorista e 1° Calci piazzati", prezzoMax:222, presenze:34, fmvExp:7.27, notes:["tiratore", "tanti gol", "rigorista", "rischio infortuni"], squadra:"Bologna", qtA:26, rig:1, piaz:1},
+  {nome:"Diouf", ruolo:"C", fascia:3, plus:true, commento:"Possibile bonus se titolare fisso", prezzoMax:57, presenze:10, fmvExp:6.51, notes:["scommessa", "bonus"], squadra:"Inter", qtA:8},
+  {nome:"Konè M.", ruolo:"C", fascia:3, plus:true, commento:"Bonus", prezzoMax:51, presenze:29, fmvExp:6.42, notes:["cartellini", "costante", "titolarissimo"], squadra:"Roma", qtA:10},
+  {nome:"Adzic", ruolo:"C", fascia:4, plus:true, commento:"Rientro Konè I. a dicembre. 3° Calci piazzati", prezzoMax:3, presenze:4, fmvExp:6.38, notes:["scommessa", "subentrante", "bonus"], squadra:"Sassuolo", qtA:5, rig:null, piaz:3},
+  {nome:"Zaniolo", ruolo:"C", fascia:2, plus:false, commento:"Gioca alto, bonus. 3° Rigorista e 1° Calci piazzati", prezzoMax:105, presenze:31, fmvExp:6.82, notes:["rischio infortuni", "cartellini", "tanti gol", "titolarissimo"], squadra:"Udinese", qtA:18, rig:3, piaz:1},
+  {nome:"Ekkelenkamp", ruolo:"C", fascia:3, plus:true, commento:"Bonus. 2° Calci piazzati", prezzoMax:54, presenze:31, fmvExp:6.51, notes:["costante", "bonus", "titolarissimo"], squadra:"Udinese", qtA:10, rig:null, piaz:2},
+  {nome:"Rabiot", ruolo:"C", fascia:2, plus:false, commento:"Bonus", prezzoMax:78, presenze:29, fmvExp:6.88, notes:["titolarissimo", "costante", "bonus"], squadra:"Milan", qtA:22},
+  {nome:"Paz N.", ruolo:"C", fascia:1, plus:false, commento:"3° Rigorista e 1° Calci piazzati", prezzoMax:246, presenze:35, fmvExp:7.54, notes:["costante", "titolarissimo", "bonus"], squadra:"Como", qtA:30, rig:3, piaz:1},
+  {nome:"Pulisic", ruolo:"C", fascia:1, plus:false, commento:"3° Rigorista e 2° Calci piazzati", prezzoMax:216, presenze:27, fmvExp:7.19, notes:["titolarissimo", "tanti gol", "rigorista", "costante", "rischio infortuni"], squadra:"Milan", qtA:25, rig:3, piaz:2},
+  {nome:"Oulai", ruolo:"C", fascia:4, plus:false, commento:"Scommessa", prezzoMax:6, presenze:25, fmvExp:6.08, notes:[], squadra:"Fiorentina", qtA:6},
+  {nome:"McKennie", ruolo:"C", fascia:2, plus:false, commento:"Bonus", prezzoMax:78, presenze:34, fmvExp:6.49, notes:["costante", "bonus", "titolarissimo"], squadra:"Juventus", qtA:17},
+  {nome:"Bernardeschi", ruolo:"C", fascia:3, plus:false, commento:"Dubbio se sarà sempre titolare. 2° Rigorista e 2° Calci piazzati", prezzoMax:42, presenze:24, fmvExp:6.61, notes:["bonus", "rischio infortuni"], squadra:"Bologna", qtA:9, rig:2, piaz:2},
+  {nome:"Otoa", ruolo:"C", fascia:4, plus:false, commento:"Scommessa", squadra:"Genoa", qtA:2},
+  {nome:"Samardzic", ruolo:"C", fascia:4, plus:false, commento:"Scommessa. 3° Rigorista e 2° Calci piazzati", prezzoMax:45, presenze:21, fmvExp:6.4, notes:["bonus", "costante", "scommessa"], squadra:"Atalanta", qtA:12, rig:3, piaz:2},
+  {nome:"Casadei", ruolo:"C", fascia:4, plus:false, commento:"Possibile titolare", prezzoMax:33, presenze:32, fmvExp:6.45, notes:["incostante", "subentrante", "bonus"], squadra:"Torino", qtA:10},
+  {nome:"Cristante", ruolo:"C", fascia:3, plus:false, commento:"Pochi bonus, titolare", prezzoMax:3, presenze:37, fmvExp:6.43, notes:["cartellini", "bonus"], squadra:"Roma", qtA:8},
+  {nome:"Calò", ruolo:"C", fascia:2, plus:true, commento:"Bonus. 1° Rigorista e 1° Calci piazzati", prezzoMax:48, presenze:37, fmvExp:6.48, notes:["titolarissimo", "rigorista", "tiratore", "bonus"], squadra:"Frosinone", qtA:7, rig:1, piaz:1},
+  {nome:"Lobotka", ruolo:"C", fascia:3, plus:false, commento:"Titolare senza bonus", prezzoMax:3, presenze:31, fmvExp:6.27, notes:["costante"], squadra:"Napoli", qtA:7},
+  {nome:"Thorstvedt", ruolo:"C", fascia:3, plus:false, commento:"Pochi bonus", prezzoMax:36, presenze:31, fmvExp:6.66, notes:["bonus", "rischio infortuni"], squadra:"Sassuolo", qtA:10},
+  {nome:"Berisha M.", ruolo:"C", fascia:3, plus:false, commento:"Viene da lungo infortunio, 2 gol e 3 assist nelle prime 12 partite poi stagione finita. 3° Rigorista e 2° Calci piazzati", prezzoMax:3, presenze:12, fmvExp:6.32, notes:["rischio infortuni", "costante"], squadra:"Lecce", qtA:5, rig:3, piaz:2},
+  {nome:"Gudmundsson A.", ruolo:"C", fascia:2, plus:false, commento:"1° Rigorista e 1° Calci piazzati", prezzoMax:63, presenze:32, fmvExp:6.74, notes:["bonus", "costante", "rigorista"], squadra:"Fiorentina", qtA:13, rig:1, piaz:1},
+  {nome:"Mkhitaryan", ruolo:"C", fascia:3, plus:false, commento:"Evitare possibilmente", prezzoMax:42, presenze:28, fmvExp:6.5, notes:["costante", "bonus", "subentrante"], squadra:"Inter", qtA:5},
+  {nome:"Alajbegovic", ruolo:"C", fascia:2, plus:false, commento:"Magari in coppia con Thuram K. o McKennie", prezzoMax:129, presenze:28, fmvExp:7.04, notes:["titolarissimo", "bonus"], squadra:"Juventus", qtA:12},
+  {nome:"Thuram K.", ruolo:"C", fascia:3, plus:false, commento:"", prezzoMax:27, presenze:34, fmvExp:6.46, notes:["titolarissimo", "costante", "cartellini", "bonus"], squadra:"Juventus", qtA:10},
+  {nome:"Bernabè", ruolo:"C", fascia:3, plus:true, commento:"1° Calci piazzati", prezzoMax:30, presenze:32, fmvExp:6.44, notes:["titolarissimo", "assistman", "costante", "rischio infortuni"], squadra:"Parma", qtA:7, rig:null, piaz:1},
+  {nome:"Saelemaekers", ruolo:"C", fascia:3, plus:false, commento:"Ma eviterei. 3° Calci piazzati", prezzoMax:57, presenze:35, fmvExp:6.37, notes:["rischio infortuni", "costante", "bonus"], squadra:"Milan", qtA:10, rig:null, piaz:3},
+  {nome:"Perrone", ruolo:"C", fascia:3, plus:true, commento:"", prezzoMax:39, presenze:36, fmvExp:6.44, notes:["cartellini", "costante", "titolarissimo"], squadra:"Como", qtA:10},
+  {nome:"Modric", ruolo:"C", fascia:3, plus:false, commento:"Non sono sicuro. 1° Calci piazzati", prezzoMax:51, presenze:33, fmvExp:6.41, notes:["costante", "titolarissimo", "assistman"], squadra:"Milan", qtA:12, rig:null, piaz:1},
+  {nome:"Zaccagni", ruolo:"C", fascia:2, plus:false, commento:"1° Rigorista e 2° Calci piazzati", prezzoMax:93, presenze:26, fmvExp:6.78, notes:["titolarissimo", "tiratore", "tanti gol", "rigorista"], squadra:"Lazio", qtA:16, rig:1, piaz:2},
+  {nome:"Konè I.", ruolo:"C", fascia:4, plus:false, commento:"Rientro a dicembre da infortunio", prezzoMax:6, presenze:35, fmvExp:6.6, notes:["scommessa"], squadra:"Sassuolo", qtA:9},
+  {nome:"Scamacca", ruolo:"A", fascia:2, plus:false, commento:"1° Rigorista", prezzoMax:219, presenze:22, fmvExp:7.51, notes:["rischio infortuni", "tanti gol"], squadra:"Atalanta", qtA:19, rig:1},
+  {nome:"Maldini", ruolo:"A", fascia:3, plus:false, commento:"Scommessa. Appena passato al Cagliari (9 ago 2026) in prestito dall'Atalanta. 1° Rigorista e 2° Calci piazzati", prezzoMax:6, presenze:18, fmvExp:6.54, notes:["bonus", "rischio infortuni", "subentrante"], squadra:"Cagliari", qtA:5, rig:1, piaz:2},
+  {nome:"Kolo Muani", ruolo:"A", fascia:1, plus:false, commento:"1° Rigorista", prezzoMax:360, presenze:30, fmvExp:7.71, notes:["costante", "tanti gol", "titolarissimo"], squadra:"Juventus", qtA:26, rig:1},
+  {nome:"Geubbels", ruolo:"A", fascia:3, plus:false, commento:"1° Rigorista", prezzoMax:45, presenze:24, fmvExp:6.54, notes:["scommessa", "rigorista"], squadra:"Lecce", qtA:9, rig:1},
+  {nome:"Nkunku", ruolo:"A", fascia:4, plus:false, commento:"1° Rigorista", prezzoMax:105, presenze:26, fmvExp:6.94, notes:["scommessa", "bonus", "subentrante"], squadra:"Milan", qtA:13, rig:1},
+  {nome:"Pessina", ruolo:"C", fascia:3, plus:true, commento:"1° Rigorista e 1° Calci piazzati", prezzoMax:21, presenze:37, fmvExp:6.38, notes:["rigorista", "cartellini", "titolarissimo"], squadra:"Monza", qtA:7, rig:1, piaz:1},
+  {nome:"Malen", ruolo:"A", fascia:1, plus:false, commento:"1° Rigorista e 2° Calci piazzati", prezzoMax:465, presenze:18, fmvExp:8.48, notes:["tanti gol", "costante", "titolarissimo", "rigorista"], squadra:"Roma", qtA:34, rig:1, piaz:2},
+  {nome:"Fazzini", ruolo:"C", fascia:3, plus:true, commento:"3° Rigorista e 1° Calci piazzati", prezzoMax:30, presenze:12, fmvExp:6.36, notes:["rischio infortuni", "bonus", "titolarissimo"], squadra:"Cagliari", qtA:7, rig:3, piaz:1},
+  {nome:"Rovella", ruolo:"C", fascia:4, plus:false, commento:"1° Calci piazzati", prezzoMax:3, presenze:11, fmvExp:5.99, notes:["cartellini", "costante", "rischio infortuni"], squadra:"Lazio", qtA:6, piaz:1},
+  {nome:"Pierotti", ruolo:"C", fascia:3, plus:false, commento:"titolare scarso. 1° Calci piazzati", prezzoMax:3, presenze:37, fmvExp:6.02, notes:["bonus", "incostante"], squadra:"Lecce", qtA:6, piaz:1},
+  {nome:"Dybala", ruolo:"A", fascia:3, plus:false, commento:"Non titolare al 100%. 2° Rigorista e 1° Calci piazzati", prezzoMax:153, presenze:21, fmvExp:7.18, notes:["tiratore", "rischio infortuni", "costante"], squadra:"Roma", qtA:14, rig:2, piaz:1},
+  {nome:"Busio", ruolo:"C", fascia:3, plus:false, commento:"1° Calci piazzati", prezzoMax:6, presenze:37, fmvExp:6.28, notes:["titolarissimo", "costante", "bonus", "cartellini"], squadra:"Venezia", qtA:5, piaz:1},
+  {nome:"Ghedjemis", ruolo:"A", fascia:3, plus:false, commento:"3° Rigorista e 2° Calci piazzati", prezzoMax:60, presenze:37, fmvExp:6.53, notes:["titolarissimo", "tanti gol"], squadra:"Frosinone", qtA:9, rig:3, piaz:2},
+  {nome:"Colpani", ruolo:"C", fascia:3, plus:false, commento:"2° Calci piazzati", prezzoMax:18, presenze:27, fmvExp:6.39, notes:["bonus"], squadra:"Monza", qtA:8, piaz:2},
+  {nome:"Nicolussi Caviglia", ruolo:"C", fascia:4, plus:false, commento:"Poco titolare. 2° Calci piazzati", prezzoMax:3, presenze:23, fmvExp:6.1, notes:["cartellini"], squadra:"Parma", qtA:6, piaz:2},
+  {nome:"Laurientè", ruolo:"C", fascia:3, plus:false, commento:"3° Rigorista e 2° Calci piazzati", prezzoMax:144, presenze:37, fmvExp:6.91, notes:["bonus", "titolarissimo", "costante"], squadra:"Sassuolo", qtA:15, rig:3, piaz:2},
+  {nome:"Oristanio", ruolo:"C", fascia:4, plus:false, commento:"Poco titolare. 2° Calci piazzati", prezzoMax:9, presenze:18, fmvExp:6.21, notes:["scommessa", "costante", "bonus", "rischio infortuni"], squadra:"Torino", qtA:7, piaz:2},
+  {nome:"Yeboah J.", ruolo:"A", fascia:3, plus:false, commento:"2° Calci piazzati", prezzoMax:75, presenze:34, fmvExp:6.69, notes:["costante", "bonus", "titolarissimo"], squadra:"Venezia", qtA:8, piaz:2},
+  {nome:"Krstovic", ruolo:"A", fascia:4, plus:false, commento:"Non titolare. 2° Rigorista", prezzoMax:150, presenze:32, fmvExp:7.21, notes:["tanti gol", "subentrante"], squadra:"Atalanta", qtA:18, rig:2},
+  {nome:"Mina", ruolo:"D", fascia:3, plus:false, commento:"2° Rigorista", prezzoMax:12, presenze:26, fmvExp:6.21, notes:["titolarissimo", "tanti gol", "rischio infortuni", "cartellini"], squadra:"Cagliari", qtA:8, rig:2},
+  {nome:"Douvikas", ruolo:"A", fascia:2, plus:false, commento:"2° Rigorista", prezzoMax:300, presenze:36, fmvExp:7.62, notes:["scommessa", "tanti gol"], squadra:"Como", qtA:20, rig:2},
+  {nome:"Raimondo", ruolo:"A", fascia:3, plus:false, commento:"Scarso. 2° Rigorista", prezzoMax:45, presenze:36, fmvExp:6.57, notes:["scommessa"], squadra:"Frosinone", qtA:7, rig:2},
+  {nome:"Ostigard", ruolo:"D", fascia:2, plus:false, commento:"2° Rigorista", prezzoMax:48, presenze:30, fmvExp:6.51, notes:["cartellini", "tanti gol", "titolarissimo"], squadra:"Genoa", qtA:11, rig:2},
+  {nome:"Stulic", ruolo:"A", fascia:4, plus:false, commento:"Non titolare. 2° Rigorista", prezzoMax:3, presenze:30, fmvExp:6.41, notes:["incostante"], squadra:"Lecce", qtA:7, rig:2},
+  {nome:"Ramos G.", ruolo:"A", fascia:1, plus:false, commento:"2° Rigorista", prezzoMax:345, presenze:30, fmvExp:7.64, notes:["titolarissimo", "tanti gol", "rigorista"], squadra:"Milan", qtA:27, rig:2},
+  {nome:"Cutrone", ruolo:"A", fascia:4, plus:false, commento:"Dubbio titolare. 2° Rigorista", prezzoMax:6, presenze:14, fmvExp:6.38, notes:["scommessa", "subentrante"], squadra:"Monza", qtA:9, rig:2},
+  {nome:"Hojlund", ruolo:"A", fascia:2, plus:false, commento:"2° Rigorista", prezzoMax:270, presenze:33, fmvExp:7.58, notes:["titolarissimo", "costante", "bonus"], squadra:"Napoli", qtA:28, rig:2},
+  {nome:"Tourè E.", ruolo:"A", fascia:4, plus:false, commento:"Titolare non costante. Non presente nelle quotazioni ufficiali. 2° Rigorista", prezzoMax:33, presenze:22, fmvExp:6.53, notes:["scommessa", "rischio infortuni", "bonus"], squadra:"Parma", qtA:null, rig:2},
+  {nome:"Solet", ruolo:"D", fascia:1, plus:false, commento:"2° Rigorista", prezzoMax:81, presenze:34, fmvExp:6.46, notes:["modificatore", "titolarissimo", "bonus"], squadra:"Udinese", qtA:13, rig:2},
+  {nome:"Rrahmani Al.", ruolo:"A", fascia:4, plus:false, commento:"Non titolare. 2° Rigorista", prezzoMax:6, presenze:0, fmvExp:6.56, notes:["scommessa"], squadra:"Venezia", qtA:8, rig:2},
+  {nome:"Maignan", ruolo:"P", fascia:1, plus:false, commento:"", prezzoMax:141, presenze:37, fmvExp:5.3, notes:["titolarissimo", "modificatore", "pararigori", "rischio infortuni"], squadra:"Milan", qtA:15},
+  {nome:"Falcone", ruolo:"P", fascia:3, plus:false, commento:"", prezzoMax:39, presenze:38, fmvExp:5.07, notes:["titolarissimo", "modificatore"], squadra:"Lecce", qtA:8},
+  {nome:"Stankovic F.", ruolo:"P", fascia:3, plus:false, commento:"", prezzoMax:12, presenze:38, fmvExp:4.84, notes:["titolarissimo", "modificatore", "rischio infortuni"], squadra:"Venezia", qtA:6},
+  {nome:"Thiam", ruolo:"P", fascia:3, plus:false, commento:"", prezzoMax:9, presenze:42, fmvExp:4.77, notes:["titolarissimo", "modificatore"], squadra:"Monza", qtA:5},
+  {nome:"Bremer", ruolo:"D", fascia:1, plus:false, commento:"", prezzoMax:105, presenze:26, fmvExp:6.54, notes:["titolarissimo", "modificatore", "rischio infortuni"], squadra:"Juventus", qtA:15},
+  {nome:"Bastoni", ruolo:"D", fascia:1, plus:false, commento:"", prezzoMax:75, presenze:28, fmvExp:6.43, notes:["titolarissimo", "modificatore", "assistman", "cartellini"], squadra:"Inter", qtA:14},
+  {nome:"Gila", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:36, presenze:31, fmvExp:6.09, notes:["titolarissimo", "modificatore", "rischio infortuni"], squadra:"Milan", qtA:12},
+  {nome:"Kelly L.", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:36, presenze:35, fmvExp:6.16, notes:["titolarissimo", "modificatore"], squadra:"Juventus", qtA:5},
+  {nome:"Romagnoli", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:21, presenze:32, fmvExp:5.99, notes:["titolarissimo", "modificatore", "cartellini", "rischio infortuni"], squadra:"Lazio", qtA:7},
+  {nome:"Haps", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:18, presenze:25, fmvExp:6.04, notes:["titolarissimo", "bonus", "cartellini"], squadra:"Venezia", qtA:5},
+  {nome:"Coco", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:6, presenze:35, fmvExp:6.03, notes:["titolarissimo", "modificatore"], squadra:"Torino", qtA:7},
+  {nome:"Gallo", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:6, presenze:37, fmvExp:5.99, notes:["titolarissimo", "assistman"], squadra:"Lecce", qtA:6},
+  {nome:"Bella-Kotchap", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:18, fmvExp:5.91, notes:["titolarissimo"], squadra:"Venezia", qtA:6},
+  {nome:"Schingtienne", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:35, fmvExp:5.84, notes:["titolarissimo"], squadra:"Venezia", qtA:3},
+  {nome:"Valenti", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:27, fmvExp:5.86, notes:["titolarissimo", "rischio infortuni", "cartellini"], squadra:"Parma", qtA:4},
+  {nome:"Adopo", ruolo:"C", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:38, fmvExp:6.02, notes:["titolarissimo"], squadra:"Cagliari", qtA:6},
+  {nome:"Frendrup", ruolo:"C", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:36, fmvExp:6.17, notes:["titolarissimo", "costante"], squadra:"Genoa", qtA:7},
+  {nome:"Karlstrom", ruolo:"C", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:36, fmvExp:5.96, notes:["titolarissimo", "incostante", "cartellini"], squadra:"Udinese", qtA:6},
+  {nome:"Romano", ruolo:"C", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:19, fmvExp:6.04, notes:["titolarissimo"], squadra:"Cagliari", qtA:5},
+  {nome:"Sorensen O.", ruolo:"C", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:30, fmvExp:5.92, notes:["titolarissimo", "incostante"], squadra:"Parma", qtA:3},
+  {nome:"Winks", ruolo:"C", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:34, fmvExp:null, notes:["titolarissimo"], squadra:"Cagliari", qtA:6},
+  {nome:"Vitinha O.", ruolo:"A", fascia:3, plus:false, commento:"", prezzoMax:30, presenze:31, fmvExp:6.42, notes:["titolarissimo"], squadra:"Genoa", qtA:8},
+  {nome:"Carnesecchi", ruolo:"P", fascia:1, plus:false, commento:"", prezzoMax:108, presenze:37, fmvExp:5.19, notes:["modificatore", "titolarissimo"], squadra:"Atalanta", qtA:16},
+  {nome:"Kalulu", ruolo:"D", fascia:2, plus:false, commento:"", prezzoMax:60, presenze:37, fmvExp:6.35, notes:["modificatore", "titolarissimo"], squadra:"Juventus", qtA:13},
+  {nome:"Cambiaso", ruolo:"D", fascia:2, plus:false, commento:"", prezzoMax:42, presenze:36, fmvExp:6.2, notes:["cartellini", "titolarissimo", "bonus"], squadra:"Juventus", qtA:9},
+  {nome:"Dragusin", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:27, presenze:10, fmvExp:6.02, notes:["tanti gol", "titolarissimo"], squadra:"Fiorentina", qtA:8},
+  {nome:"Kabasele", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:15, presenze:28, fmvExp:6.12, notes:["tanti gol", "titolarissimo"], squadra:"Udinese", qtA:4},
+  {nome:"Bracaglia", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:32, fmvExp:5.79, notes:["bonus", "titolarissimo"], squadra:"Frosinone", qtA:5},
+  {nome:"Siebert", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:19, fmvExp:5.97, notes:["incostante", "titolarissimo"], squadra:"Lecce", qtA:4},
+  {nome:"Matic", ruolo:"C", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:34, fmvExp:5.97, notes:["cartellini", "titolarissimo"], squadra:"Sassuolo", qtA:5},
+  {nome:"Thuram", ruolo:"A", fascia:1, plus:false, commento:"", prezzoMax:375, presenze:29, fmvExp:7.89, notes:["costante", "titolarissimo", "bonus"], squadra:"Inter", qtA:29},
+  {nome:"Simeone", ruolo:"A", fascia:2, plus:false, commento:"", prezzoMax:198, presenze:32, fmvExp:7.38, notes:["tanti gol", "titolarissimo", "incostante"], squadra:"Torino", qtA:15},
+  {nome:"Di Gregorio", ruolo:"P", fascia:1, plus:false, commento:"Occhio che la Juve cerca il POR", prezzoMax:123, presenze:30, fmvExp:5.17, notes:["imbattibilità", "pararigori", "titolarissimo"], squadra:"Juventus", qtA:9},
+  {nome:"Pavlovic", ruolo:"D", fascia:1, plus:false, commento:"", prezzoMax:69, presenze:34, fmvExp:6.54, notes:["modificatore", "tanti gol", "titolarissimo"], squadra:"Milan", qtA:14},
+  {nome:"Norton-Cuffy", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:24, presenze:27, fmvExp:6.1, notes:["rischio infortuni", "bonus", "titolarissimo"], squadra:"Genoa", qtA:8},
+  {nome:"Doig", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:3, presenze:27, fmvExp:5.8, notes:["incostante", "bonus", "titolarissimo"], squadra:"Sassuolo", qtA:4},
+  {nome:"Djimsiti", ruolo:"D", fascia:4, plus:false, commento:"", prezzoMax:3, presenze:33, fmvExp:5.97, notes:["cartellini", "modificatore", "titolarissimo"], squadra:"Atalanta", qtA:7},
+  {nome:"Mandragora", ruolo:"C", fascia:3, plus:false, commento:"", prezzoMax:24, presenze:34, fmvExp:6.41, notes:["costante", "cartellini", "titolarissimo", "tanti gol"], squadra:"Fiorentina", qtA:9},
+  {nome:"Dovbyk", ruolo:"A", fascia:3, plus:false, commento:"", prezzoMax:150, presenze:13, fmvExp:6.97, notes:["tanti gol", "rischio infortuni", "titolarissimo"], squadra:"Bologna", qtA:16},
+  {nome:"Soulè", ruolo:"A", fascia:3, plus:false, commento:"", prezzoMax:120, presenze:32, fmvExp:6.87, notes:["costante", "bonus", "titolarissimo"], squadra:"Roma", qtA:12},
+  {nome:"Rrahmani", ruolo:"D", fascia:1, plus:false, commento:"", prezzoMax:84, presenze:null, fmvExp:null, notes:["modificatore", "rischio infortuni", "tanti gol", "titolarissimo"], squadra:"Napoli", qtA:14},
+  {nome:"Gabbia", ruolo:"D", fascia:3, plus:false, commento:"", prezzoMax:21, presenze:null, fmvExp:null, notes:["modificatore", "rischio infortuni", "tanti gol", "titolarissimo"], squadra:"Milan", qtA:7},
 ];
 players.forEach(p => p.id = p.nome.toLowerCase().replace(/[^a-z0-9]/g,''));
 
@@ -405,6 +459,33 @@ function specBadges(p){
   if(p.rig) html += `<span class="spec-badge rig" title="${p.rig}° rigorista">R${p.rig}</span>`;
   if(p.piaz) html += `<span class="spec-badge piaz" title="${p.piaz}° battitore punizioni/piazzati">P${p.piaz}</span>`;
   return html;
+}
+
+const noteBadgeInfo = {
+  'titolarissimo': {abbr:'TIT', color:'#3aa76d'},
+  'modificatore': {abbr:'MOD', color:'#4a90d9'},
+  'pararigori': {abbr:'PRIG', color:'#2f8f8f'},
+  'imbattibilità': {abbr:'IMB', color:'#2f8f8f'},
+  'bonus': {abbr:'BON', color:'#d9a441'},
+  'tanti gol': {abbr:'GOL', color:'#e08a3a'},
+  'rigorista': {abbr:'RIG', color:'#e0b73a'},
+  'assistman': {abbr:'AST', color:'#7b6fd6'},
+  'tiratore': {abbr:'TIR', color:'#5fb3d9'},
+  'jolly': {abbr:'JOL', color:'#a97fd1'},
+  'costante': {abbr:'COST', color:'#4caf7d'},
+  'rischio infortuni': {abbr:'INF', color:'#e05c5c'},
+  'incostante': {abbr:'INCO', color:'#d9714a'},
+  'scommessa': {abbr:'SCOM', color:'#6b7688'},
+  'cartellini': {abbr:'CART', color:'#d9634a'},
+  'Coppa Africa': {abbr:'CAF', color:'#d9a441'},
+  'subentrante': {abbr:'SUB', color:'#8b93a7'},
+};
+function noteBadges(p){
+  if(!p.notes || !p.notes.length) return '';
+  return p.notes.map(n=>{
+    const info = noteBadgeInfo[n] || {abbr:n.slice(0,4).toUpperCase(), color:'#6b7688'};
+    return `<span class="note-badge" style="background:${info.color}" title="${n}">${info.abbr}</span>`;
+  }).join('');
 }
 
 // ============================================================
@@ -519,7 +600,7 @@ let sortKey2 = 'fascia', sortDir2 = 1;
 
 function getSortValue(p, key){
   if(key==='prezzo') return Number((state[p.id]&&state[p.id].prezzo) || 0);
-  if(key==='qtA' || key==='fvm' || key==='fascia') return p[key]==null ? -Infinity : Number(p[key]);
+  if(key==='qtA' || key==='fascia' || key==='prezzoMax' || key==='presenze' || key==='fmvExp') return p[key]==null ? -Infinity : Number(p[key]);
   return (p[key]||'').toString().toLowerCase();
 }
 function compareBy(a, b, key, dir){
@@ -563,8 +644,11 @@ function render(){
       <td><span class="fascia" style="background:${tierColor[p.fascia]}">${tierLabel[p.fascia]}${p.plus?'+':''}</span></td>
       <td>${p.squadra||'—'}</td>
       <td>${p.qtA!=null?p.qtA:'—'}</td>
-      <td>${p.fvm!=null?p.fvm:'—'}</td>
+      <td>${p.prezzoMax!=null?p.prezzoMax:'—'}</td>
       <td class="commento">${p.commento||''}</td>
+      <td class="tags">${noteBadges(p)}</td>
+      <td>${p.presenze!=null?p.presenze:'—'}</td>
+      <td>${p.fmvExp!=null?p.fmvExp:'—'}</td>
       <td><input type="number" class="prezzo" data-id="${p.id}" value="${s.prezzo||''}" placeholder="—"></td>
       <td class="actions">
         <button class="btn mio ${s.stato==='mio'?'active':''}" data-id="${p.id}" data-stato="mio">Mio</button>
