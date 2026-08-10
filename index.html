@@ -227,6 +227,10 @@
 
 <div class="stats" id="stats"></div>
 <div class="stats" id="listCounts" style="margin-top:4px; opacity:.75; font-size:12px;"></div>
+<details id="tagLegend" style="margin-top:8px; font-size:12px; color:var(--muted);">
+  <summary style="cursor:pointer; user-select:none; display:inline-block; font-weight:700; font-size:13px; color:var(--tier3); background:var(--panel2); border:1px solid var(--border); padding:6px 12px; border-radius:8px;">🏷️ Legenda tag</summary>
+  <div id="tagLegendBody" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
+</details>
 <br>
 
 <div class="table-wrap">
@@ -486,6 +490,17 @@ function noteBadges(p){
     const info = noteBadgeInfo[n] || {abbr:n.slice(0,4).toUpperCase(), color:'#6b7688'};
     return `<span class="note-badge" style="background:${info.color}" title="${n}">${info.abbr}</span>`;
   }).join('');
+}
+
+function renderTagLegend(){
+  const el = document.getElementById('tagLegendBody');
+  if(!el) return;
+  el.innerHTML = Object.entries(noteBadgeInfo).map(([full, info])=>
+    `<span style="display:inline-flex; align-items:center; gap:4px;">
+       <span class="note-badge" style="background:${info.color}">${info.abbr}</span>
+       <span>${full}</span>
+     </span>`
+  ).join('');
 }
 
 // ============================================================
@@ -814,6 +829,7 @@ document.getElementById('sortSecondary').onchange = (e)=>{ sortKey2 = e.target.v
 document.getElementById('sortDirBtn').onclick = ()=>{ sortDir = -sortDir; render(); };
 document.getElementById('sortDir2Btn').onclick = ()=>{ sortDir2 = -sortDir2; render(); };
 render();
+renderTagLegend();
 
 if(syncEnabled){
   loadRemoteState();
