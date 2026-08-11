@@ -101,6 +101,7 @@
     border:1px solid var(--border); background:var(--panel2); color:var(--text);
     padding:5px 9px; border-radius:6px; font-size:13px; cursor:pointer; font-weight:700;
   }
+  .dir-btn.active-filter{ background:#5a4a12; border-color:#f2c744; color:#f2c744; }
   .prezzo{
     width:55px; background:var(--panel2); border:1px solid var(--border); color:var(--text);
     padding:5px 6px; border-radius:6px; font-size:12px;
@@ -194,6 +195,7 @@
     <option value="piaz2">2° Calci piazzati</option>
     <option value="piaz3">3° Calci piazzati</option>
   </select>
+  <button type="button" id="targetFilterBtn" class="dir-btn" title="Mostra solo i preferiti">☆ Solo preferiti</button>
   <select id="sortPrimary" title="Ordina per">
     <option value="ruolo">Ordina: Ruolo</option>
     <option value="nome">Ordina: Nome</option>
@@ -607,6 +609,7 @@ let currentRuolo = 'all';
 let currentFascia = 'all';
 let currentStato = 'all';
 let currentSpec = 'all';
+let currentTargetOnly = false;
 let searchTerm = '';
 
 
@@ -639,6 +642,7 @@ function render(){
       if(currentSpec.startsWith('rig') && p.rig !== rank) return false;
       if(currentSpec.startsWith('piaz') && p.piaz !== rank) return false;
     }
+    if(currentTargetOnly && !(state[p.id] && state[p.id].target)) return false;
     if(searchTerm && !p.nome.toLowerCase().includes(searchTerm) && !(p.commento||'').toLowerCase().includes(searchTerm)) return false;
     return true;
   });
@@ -721,6 +725,11 @@ function render(){
   const sd2Btn = document.getElementById('sortDir2Btn');
   if(sdBtn) sdBtn.textContent = sortDir===1 ? '▲' : '▼';
   if(sd2Btn) sd2Btn.textContent = sortDir2===1 ? '▲' : '▼';
+  const tfBtn = document.getElementById('targetFilterBtn');
+  if(tfBtn){
+    tfBtn.textContent = currentTargetOnly ? '★ Solo preferiti' : '☆ Solo preferiti';
+    tfBtn.classList.toggle('active-filter', currentTargetOnly);
+  }
 
   renderStats();
   renderRosa();
@@ -824,6 +833,7 @@ document.getElementById('search').oninput = (e)=>{ searchTerm = e.target.value.t
 document.getElementById('fasciaFilter').onchange = (e)=>{ currentFascia = e.target.value; render(); };
 document.getElementById('statoFilter').onchange = (e)=>{ currentStato = e.target.value; render(); };
 document.getElementById('specFilter').onchange = (e)=>{ currentSpec = e.target.value; render(); };
+document.getElementById('targetFilterBtn').onclick = ()=>{ currentTargetOnly = !currentTargetOnly; render(); };
 document.getElementById('sortPrimary').onchange = (e)=>{ sortKey = e.target.value; sortDir = 1; render(); };
 document.getElementById('sortSecondary').onchange = (e)=>{ sortKey2 = e.target.value || null; sortDir2 = 1; render(); };
 document.getElementById('sortDirBtn').onclick = ()=>{ sortDir = -sortDir; render(); };
